@@ -21,7 +21,7 @@ if not exist .env (
 echo Starting server...
 echo.
 
-docker compose -f server001/compose.yml up -d
+docker compose up -d
 
 if %ERRORLEVEL% EQU 0 (
     echo.

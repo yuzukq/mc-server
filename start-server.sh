@@ -20,7 +20,7 @@ fi
 echo "Starting server..."
 echo
 
-docker compose -f server001/compose.yml up -d
+docker compose up -d
 
 if [ $? -eq 0 ]; then
     echo

@@ -10,11 +10,11 @@ echo
 cd "$(dirname "$0")"
 
 echo "Stopping server..."
-docker compose -f server001/compose.yml down
+docker compose down
 
 echo
 echo "Uploading world data to R2 and releasing lock..."
-docker compose -f server001/compose.yml run --rm sync-shutdown
+docker compose run --rm sync-shutdown
 
 if [ $? -eq 0 ]; then
     echo
