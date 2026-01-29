@@ -5,10 +5,10 @@ services:
     image: python:3.11-slim
     working_dir: /app
     volumes:
-      - ../sync.py:/app/sync.py
-      - ../requirements.txt:/app/requirements.txt
-      - ../.env:/app/.env
-      - ./data:/app/server001/data
+      - ./sync.py:/app/sync.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./.env:/app/.env
+      - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
     command: >
@@ -75,7 +75,7 @@ services:
       # Plugin
       TYPE: "VANILLA" # "PAPER" "FABRIC" ...
     volumes:
-      - ./server001/data:/data
+      - ./data:/data
     depends_on:
       sync-init:
         condition: service_completed_successfully
@@ -86,10 +86,10 @@ services:
     image: python:3.11-slim
     working_dir: /app
     volumes:
-      - ../sync.py:/app/sync.py
-      - ../requirements.txt:/app/requirements.txt
-      - ../.env:/app/.env
-      - ./data:/app/server001/data
+      - ./sync.py:/app/sync.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./.env:/app/.env
+      - ./data:/app/data
     environment:
       - PYTHONUNBUFFERED=1
     command: >
