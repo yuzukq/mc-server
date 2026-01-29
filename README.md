@@ -99,7 +99,7 @@ R2_ACCESS_KEY_ID=your_access_key_id_here
 R2_SECRET_ACCESS_KEY=your_secret_access_key_here
 R2_BUCKET_NAME=minecraft-world-data
 R2_ENDPOINT=https://your_account_id_here.r2.cloudflarestorage.com
-LOCAL_DATA_DIR=./server001/data
+LOCAL_DATA_DIR=./data
 WORLD_NAME=world
 ```
 
@@ -128,7 +128,7 @@ chmod +x start-server.sh
 
 #### 手動起動
 ```bash
-docker compose -f server001/compose.yml up -d
+docker compose up -d
 ```
 
 起動時の処理:
@@ -151,8 +151,8 @@ stop-server.bat
 
 #### 手動停止
 ```bash
-docker compose -f server001/compose.yml down
-docker compose -f server001/compose.yml run --rm sync-shutdown
+docker compose down
+docker compose run --rm sync-shutdown
 ```
 
 停止時の処理:
@@ -233,10 +233,13 @@ python sync.py check-lock
 
 ```
 mc-server/
-├── server001/
-│   ├── compose.yml          # Docker Compose設定
-│   └── data/                # Minecraftサーバーデータ（自動生成）
-│       └── world/           # ワールドデータ
+├── data/                    # Minecraftサーバーデータ（自動生成）
+│   ├── world/               # ワールドデータ
+│   ├── world_nether/        # ネザー
+│   ├── world_the_end/       # エンド
+│   ├── server.properties    # サーバー設定
+│   └── ...                  # その他の設定ファイル
+├── compose.yml              # Docker Compose設定
 ├── sync.py                  # R2同期スクリプト
 ├── requirements.txt         # Python依存関係
 ├── .env                     # 環境変数（要作成）
