@@ -134,9 +134,15 @@ class R2Sync:
             import tarfile
             import shutil
             
-            # Remove existing data directory to avoid conflicts
+            # Clear existing data directory contents (don't remove the directory itself as it may be mounted)
             if local_data_path.exists():
-                shutil.rmtree(local_data_path)
+                for item in local_data_path.iterdir():
+                    if item.is_dir():
+                        shutil.rmtree(item)
+                    else:
+                        item.unlink()
+            else:
+                local_data_path.mkdir(parents=True, exist_ok=True)
             
             with tarfile.open(archive_path, 'r:gz') as tar:
                 tar.extractall(path=local_data_path)
