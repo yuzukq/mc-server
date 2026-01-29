@@ -162,13 +162,43 @@ docker compose -f server001/compose.yml run --rm sync-shutdown
 
 ### ログの確認
 
+#### サーバーログ
 ```bash
-# サーバーログ
+# リアルタイムでログを追跡（Ctrl+Cで終了）
 docker logs -f mc_server
 
-# 同期ログ
+# 最新50行を表示
+docker logs mc_server --tail 50
+
+# サーバー起動完了を確認（"Done"メッセージを検索）
+docker logs mc_server 2>&1 | Select-String "Done"
+```
+
+#### 同期ログ
+```bash
+# 起動時の同期ログ
 docker logs mc_sync_init
+
+# 停止時の同期ログ
 docker logs mc_sync_shutdown
+```
+
+#### コンテナ状態確認
+```bash
+# 実行中のコンテナ一覧
+docker ps
+
+# Minecraftサーバー関連のコンテナ（停止中も含む）
+docker ps -a --filter "name=mc_"
+
+# ポート確認
+docker port mc_server
+```
+
+#### R2同期状態確認
+```bash
+# ロック状態確認（Pythonが必要）
+python sync.py check-lock
 ```
 
 ## ロック機構について

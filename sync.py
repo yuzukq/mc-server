@@ -139,7 +139,7 @@ class R2Sync:
                 shutil.rmtree(local_data_path)
             
             with tarfile.open(archive_path, 'r:gz') as tar:
-                tar.extractall(path=local_data_path.parent)
+                tar.extractall(path=local_data_path)
             
             # Clean up archive
             archive_path.unlink()
@@ -166,9 +166,11 @@ class R2Sync:
         
         # Create archive
         import tarfile
+        import os
         with tarfile.open(archive_path, 'w:gz') as tar:
-            # Add entire data directory
-            tar.add(local_data_path, arcname='data')
+            # Add contents of data directory, not the directory itself
+            for item in local_data_path.iterdir():
+                tar.add(item, arcname=item.name)
         
         # Upload to R2
         self.s3_client.upload_file(
