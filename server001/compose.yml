@@ -1,4 +1,24 @@
 services:
+  # Sync initialization service - runs before server starts
+  sync-init:
+    container_name: mc_sync_init
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./sync.py:/app/sync.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./.env:/app/.env
+      - ./server001/data:/app/server001/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "
+        pip install --quiet -r requirements.txt &&
+        python sync.py init
+      "
+    restart: "no"
+
+  # Minecraft server
   server:
     container_name: mc_server
     image: itzg/minecraft-server
@@ -55,4 +75,28 @@ services:
       # Plugin
       TYPE: "VANILLA" # "PAPER" "FABRIC" ...
     volumes:
-      - ./data:/data
+      - ./server001/data:/data
+    depends_on:
+      sync-init:
+        condition: service_completed_successfully
+
+  # Sync shutdown service - runs after server stops
+  sync-shutdown:
+    container_name: mc_sync_shutdown
+    image: python:3.11-slim
+    working_dir: /app
+    volumes:
+      - ./sync.py:/app/sync.py
+      - ./requirements.txt:/app/requirements.txt
+      - ./.env:/app/.env
+      - ./server001/data:/app/server001/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      sh -c "
+        pip install --quiet -r requirements.txt &&
+        python sync.py shutdown
+      "
+    restart: "no"
+    profiles:
+      - shutdown
