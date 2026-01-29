@@ -12,44 +12,12 @@ Tailscaleの接続は各自調べるか聞いてください。
 - 🔒 **ロック機構**: R2上のロックファイルで同時起動を防止
 - 🔄 **自動同期**: サーバー起動時にワールドをダウンロード、停止時にアップロード
 - 🖥️ **クロスプラットフォーム**: Windows/Linux両対応
-- 🐳 **Docker統合**: `docker compose`で簡単に起動・停止
+- 🐳 **Docker統合**: バッチファイルで起動・停止
 - 🌐 **Tailscale対応**: ポート開放不要でプライベートネットワーク経由で接続
 
 ### 簡単な原理
-```mermaid
-graph TB
-    subgraph "ホスト環境"
-        User[ユーザー]
-        Tailscale[Tailscale<br/>ホストで実行]
-        Docker[Docker Compose]
-    end
-    
-    subgraph "Dockerコンテナ"
-        SyncInit[sync-init<br/>Python Container]
-        MCServer[Minecraft Server<br/>itzg/minecraft-server]
-        SyncShutdown[sync-shutdown<br/>Python Container]
-    end
-    
-    subgraph "Cloudflare R2"
-        Lock[server.lock<br/>ロックファイル]
-        World[world.tar.gz<br/>ワールドデータ]
-    end
-    
-    User -->|起動| Docker
-    Docker -->|1. 実行| SyncInit
-    SyncInit -->|2. ロック確認| Lock
-    SyncInit -->|3. ロック作成| Lock
-    SyncInit -->|4. ダウンロード| World
-    SyncInit -->|5. 完了| MCServer
-    MCServer -->|ポートフォワード| Tailscale
-    Tailscale -->|プライベートネットワーク| User
-    
-    User -->|停止| Docker
-    Docker -->|1. 停止| MCServer
-    Docker -->|2. 実行| SyncShutdown
-    SyncShutdown -->|3. アップロード| World
-    SyncShutdown -->|4. ロック解放| Lock
-```
+
+![システム構成図](diagram.png)
 
 ## 前提条件
 
