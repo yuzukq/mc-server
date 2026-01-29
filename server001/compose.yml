@@ -1,0 +1,58 @@
+services:
+  server:
+    container_name: mc_server
+    image: itzg/minecraft-server
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    ports:
+      - "25565:25565" # コンテナ↔ホスト
+    environment:
+      EULA: "TRUE"
+      # Server
+      TZ: "Asia/Tokyo"
+      ENABLE_WHITELIST: "FALSE"
+      SERVER_NAME: "MyServer"
+      SERVER_PORT: "25565"
+      ENABLE_JMX: "false"
+      ENABLE_RCON: "true"
+      BROADCAST_CONSOLE_TO_OPS: "true"
+      BROADCAST_RCON_TO_OPS: "true"
+      MOTD: "Minecraft Server by Docker"
+      # Minecraft Version
+      VERSION: 1.19.2
+      # Game Config
+      SEED: ""
+      ALLOW_FLIGHT: "false"
+      ALLOW_NETHER: "true"
+      ANNOUNCE_PLAYER_ACHIEVEMENTS: "true"
+      DEBUG: "false"
+      DIFFICULTY: "normal"
+      ENABLE_COMMAND_BLOCK: "false"
+      ENABLE_STATUS: "true"
+      ENFORCE_SECURE_PROFILE: "false"
+      ENFORCE_WHITELIST: "false"
+      FORCE_GAMEMODE: "true"
+      FUNCTION_PERMISSION_LEVEL: 2
+      GENERATE_STRUCTURES: "true"
+      HARDCORE: "false"
+      LEVEL_NAME: "world"
+      LEVEL_TYPE: "DEFAULT"
+      MAX_PLAYERS: 8
+      MODE: "survival"
+      ONLINE_MODE: "true"
+      OP_PERMISSION_LEVEL: 4
+      PREVIEWS_CHAT: "true"
+      PVP: "false"
+      SIMULATION_DISTANCE: 10
+      VIEW_DISTANCE: 12
+      SNOOPER_ENABLED: "false"
+      SPAWN_ANIMALS: "true"
+      SPAWN_MONSTERS: "true"
+      SPAWN_NPCS: "true"
+      SPAWN_PROTECTION: 0
+      USE_NATIVE_TRANSPORT: "true"
+      # Plugin
+      TYPE: "VANILLA" # "PAPER" "FABRIC" ...
+    volumes:
+      - ./data:/data
