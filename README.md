@@ -11,6 +11,7 @@ Tailscaleの接続は各自調べるか聞いてください。
 
 - 🔒 **ロック機構**: R2上のロックファイルで同時起動を防止
 - 🔄 **自動同期**: サーバー起動時にワールドをダウンロード、停止時にアップロード
+- 📺 **ホスト表示**: 現在のホストをゲーム内bossbarで全プレイヤーに表示
 - 🖥️ **クロスプラットフォーム**: Windows/Linux両対応
 - 🐳 **Docker統合**: バッチファイルで起動・停止
 - 🌐 **Tailscale対応**: ポート開放不要でプライベートネットワーク経由で接続
@@ -69,6 +70,8 @@ R2_BUCKET_NAME=minecraft-world-data
 R2_ENDPOINT=https://your_account_id_here.r2.cloudflarestorage.com
 LOCAL_DATA_DIR=./data
 WORLD_NAME=world
+HOST_DISPLAY_NAME=YourName
+RCON_PASSWORD=minecraft
 ```
 
 ### 3. Python依存関係のインストール（任意）
@@ -209,6 +212,7 @@ mc-server/
 │   └── ...                  # その他の設定ファイル
 ├── compose.yml              # Docker Compose設定
 ├── sync.py                  # R2同期スクリプト
+├── bossbar.rb               # ホスト表示bossbar管理スクリプト
 ├── requirements.txt         # Python依存関係
 ├── .env                     # 環境変数（要作成）
 ├── .env.example             # 環境変数テンプレート
