@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 10,
+    "description": "Displays current host on bossbar for all players"
+  }
+}
