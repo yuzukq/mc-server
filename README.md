@@ -202,25 +202,27 @@ python sync.py check-lock
 ## ディレクトリ構造
 
 ```
-mc-server/
-├── data/                    # Minecraftサーバーデータ（自動生成）
-│   ├── world/               # ワールドデータ
-│   ├── world_nether/        # ネザー
-│   ├── world_the_end/       # エンド
-│   ├── server.properties    # サーバー設定
-│   └── ...                  # その他の設定ファイル
-├── compose.yml              # Docker Compose設定
-├── sync.py                  # R2同期スクリプト
-├── bossbar.rb               # ホスト表示bossbar管理スクリプト
-├── requirements.txt         # Python依存関係
-├── .env                     # 環境変数（要作成）
-├── .env.example             # 環境変数テンプレート
-├── start-server.bat         # Windows起動スクリプト
-├── stop-server.bat          # Windows停止スクリプト
-├── start-server.sh          # Linux起動スクリプト
-├── stop-server.sh           # Linux停止スクリプト
-└── README.md                # このファイル
-```
+ mc-server/
+ ├── data/                    # Minecraftサーバーデータ（自動生成）
+ │   ├── world/               # ワールドデータ
+ │   ├── world_nether/        # ネザー
+ │   ├── world_the_end/       # エンド
+ │   ├── server.properties    # サーバー設定
+ │   └── ...                  # その他の設定ファイル
+ ├── datapack/                # データパック
+ │   └── host_bossbar/        # ホスト表示用データパック
+ │       ├── pack.mcmeta      # データパックメタデータ
+ │       └── data/
+ │           └── host_bossbar/
+ │               ├── functions/
+ │               │   ├── load.mcfunction    # 初期化処理
+ │               │   └── tick.mcfunction    # 定期更新処理
+ │               └── tags/
+ │                   └── functions/
+ │                       └── load.json      # ロード設定
+ ├── compose.yml              # Docker Compose設定
+ ├── sync.py                  # R2同期スクリプト
+ ├── bossbar.rb               # ホスト表示bossbar管理スクリプト
 
 ## セキュリティ
 
