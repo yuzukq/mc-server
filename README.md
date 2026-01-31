@@ -69,7 +69,6 @@ R2_SECRET_ACCESS_KEY=your_secret_access_key_here
 R2_BUCKET_NAME=minecraft-world-data
 R2_ENDPOINT=https://your_account_id_here.r2.cloudflarestorage.com
 LOCAL_DATA_DIR=./data
-WORLD_NAME=world
 HOST_DISPLAY_NAME=YourName
 RCON_PASSWORD=minecraft
 ```
