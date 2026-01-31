@@ -122,5 +122,3 @@ services:
       server:
         condition: service_started
     restart: "no"
-    networks:
-      - default
