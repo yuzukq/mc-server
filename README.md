@@ -18,7 +18,7 @@ Tailscaleの接続は各自調べるか聞いてください。
 
 ### 簡単な原理
 
-![システム構成図](diagram.png)
+![システム構成図](docs/diagram.png)
 
 ## 前提条件
 
@@ -78,7 +78,7 @@ RCON_PASSWORD=minecraft
 Dockerを使う場合は不要ですが、ローカルでスクリプトを実行する場合:
 
 ```bash
-pip install -r requirements.txt
+pip install -r scripts/requirements.txt
 ```
 
 ## 使い方
@@ -168,7 +168,7 @@ docker port mc_server
 #### R2同期状態確認
 ```bash
 # ロック状態確認（Pythonが必要）
-python sync.py check-lock
+python scripts/sync.py check-lock
 ```
 
 ## ロック機構について
@@ -190,20 +190,20 @@ python sync.py check-lock
 
 2. **コマンドライン経由**:
    ```bash
-   python sync.py unlock
+   python scripts/sync.py unlock
    ```
 
 ### ロック状態の確認
 
 ```bash
-python sync.py check-lock
+python scripts/sync.py check-lock
 ```
 
 ## ディレクトリ構造
 
 ```
  mc-server/
- ├── data/                    # Minecraftサーバーデータ（自動生成）
+ ├── data/                    # Minecraftサーバーデータ(自動生成)
  │   ├── world/               # ワールドデータ
  │   ├── world_nether/        # ネザー
  │   ├── world_the_end/       # エンド
@@ -220,9 +220,17 @@ python sync.py check-lock
  │               └── tags/
  │                   └── functions/
  │                       └── load.json      # ロード設定
+ ├── docs/                    # ドキュメント・画像
+ │   └── diagram.png          # システム構成図
+ ├── scripts/                 # スクリプト
+ │   ├── sync.py              # R2同期スクリプト
+ │   ├── bossbar.rb           # ホスト表示bossbar管理スクリプト
+ │   └── requirements.txt     # Python依存関係
  ├── compose.yml              # Docker Compose設定
- ├── sync.py                  # R2同期スクリプト
- ├── bossbar.rb               # ホスト表示bossbar管理スクリプト
+ ├── start-server.bat         # サーバー起動スクリプト(Windows)
+ ├── start-server.sh          # サーバー起動スクリプト(Linux/Mac)
+ ├── stop-server.bat          # サーバー停止スクリプト(Windows)
+ └── stop-server.sh           # サーバー停止スクリプト(Linux/Mac)
 
 ## セキュリティ
 

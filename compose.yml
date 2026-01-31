@@ -5,8 +5,8 @@ services:
     image: python:3.11-slim
     working_dir: /app
     volumes:
-      - ./sync.py:/app/sync.py
-      - ./requirements.txt:/app/requirements.txt
+      - ./scripts/sync.py:/app/sync.py
+      - ./scripts/requirements.txt:/app/requirements.txt
       - ./.env:/app/.env
       - ./data:/app/data
     environment:
@@ -88,8 +88,8 @@ services:
     image: python:3.11-slim
     working_dir: /app
     volumes:
-      - ./sync.py:/app/sync.py
-      - ./requirements.txt:/app/requirements.txt
+      - ./scripts/sync.py:/app/sync.py
+      - ./scripts/requirements.txt:/app/requirements.txt
       - ./.env:/app/.env
       - ./data:/app/data
     environment:
@@ -109,7 +109,7 @@ services:
     image: ruby:3.2-slim
     working_dir: /app
     volumes:
-      - ./bossbar.rb:/app/bossbar.rb:ro
+      - ./scripts/bossbar.rb:/app/bossbar.rb:ro
     environment:
       - RCON_HOST=server
       - RCON_PORT=25575
