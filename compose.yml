@@ -77,6 +77,7 @@ services:
       TYPE: "VANILLA" # "PAPER" "FABRIC" ...
     volumes:
       - ./data:/data
+      - ./datapack/host_bossbar:/data/world/datapacks/host_bossbar:ro
     depends_on:
       sync-init:
         condition: service_completed_successfully
