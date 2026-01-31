@@ -12,7 +12,8 @@ env/
 ENV/
 
 # Minecraft server data (managed by R2)
-data/
+# Use /data/ (leading slash) to only match root directory, not datapack/data/
+/data/
 
 # Logs
 *.log

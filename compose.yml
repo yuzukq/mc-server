@@ -36,6 +36,7 @@ services:
       SERVER_PORT: "25565"
       ENABLE_JMX: "false"
       ENABLE_RCON: "true"
+      RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"
       BROADCAST_CONSOLE_TO_OPS: "true"
       BROADCAST_RCON_TO_OPS: "true"
       MOTD: "Minecraft Server by Docker"
@@ -76,6 +77,7 @@ services:
       TYPE: "VANILLA" # "PAPER" "FABRIC" ...
     volumes:
       - ./data:/data
+      - ./datapack/host_bossbar:/data/world/datapacks/host_bossbar:ro
     depends_on:
       sync-init:
         condition: service_completed_successfully
@@ -100,3 +102,23 @@ services:
     restart: "no"
     profiles:
       - shutdown
+
+  # Bossbar manager - displays current host on bossbar
+  bossbar-manager:
+    container_name: mc_bossbar
+    image: ruby:3.2-slim
+    working_dir: /app
+    volumes:
+      - ./bossbar.rb:/app/bossbar.rb:ro
+    environment:
+      - RCON_HOST=server
+      - RCON_PORT=25575
+      - RCON_PASSWORD=${RCON_PASSWORD:-minecraft}
+      - HOST_DISPLAY_NAME=${HOST_DISPLAY_NAME:-Unknown}
+      - MAX_RETRIES=30
+      - RETRY_INTERVAL=5
+    command: ruby bossbar.rb
+    depends_on:
+      server:
+        condition: service_started
+    restart: "no"
