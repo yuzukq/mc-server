@@ -24,7 +24,6 @@ Tailscaleの接続は各自調べるか聞いてください。
 
 - Docker & Docker Compose (必須)
 - Tailscale (必須)
-- Python 3.11以上（ローカルでスクリプトを実行する場合）
 - Cloudflare R2アカウント (クライアント側は不要)
 
 ## セットアップ
@@ -71,14 +70,6 @@ R2_ENDPOINT=https://your_account_id_here.r2.cloudflarestorage.com
 LOCAL_DATA_DIR=./data
 HOST_DISPLAY_NAME=YourName
 RCON_PASSWORD=minecraft
-```
-
-### 3. Python依存関係のインストール（任意）
-
-Dockerを使う場合は不要ですが、ローカルでスクリプトを実行する場合:
-
-```bash
-pip install -r scripts/requirements.txt
 ```
 
 ## 使い方
@@ -165,12 +156,6 @@ docker ps -a --filter "name=mc_"
 docker port mc_server
 ```
 
-#### R2同期状態確認
-```bash
-# ロック状態確認（Pythonが必要）
-python scripts/sync.py check-lock
-```
-
 ## ロック機構について
 
 ### ロックの仕組み
@@ -190,13 +175,13 @@ python scripts/sync.py check-lock
 
 2. **コマンドライン経由**:
    ```bash
-   python scripts/sync.py unlock
+   docker compose run --rm sync-init ruby /app/sync.rb unlock
    ```
 
 ### ロック状態の確認
 
 ```bash
-python scripts/sync.py check-lock
+docker compose run --rm sync-init ruby /app/sync.rb check-lock
 ```
 
 ## ディレクトリ構造
@@ -220,12 +205,14 @@ python scripts/sync.py check-lock
  │               └── tags/
  │                   └── functions/
  │                       └── load.json      # ロード設定
+ ├── docker/                  # Dockerファイル
+ │   └── ruby/
+ │       └── Dockerfile       # Rubyカスタムイメージ
  ├── docs/                    # ドキュメント・画像
  │   └── diagram.png          # システム構成図
  ├── scripts/                 # スクリプト
- │   ├── sync.py              # R2同期スクリプト
- │   ├── bossbar.rb           # ホスト表示bossbar管理スクリプト
- │   └── requirements.txt     # Python依存関係
+ │   ├── sync.rb              # R2同期スクリプト
+ │   └── bossbar.rb           # ホスト表示bossbar管理スクリプト
  ├── compose.yml              # Docker Compose設定
  ├── start-server.bat         # サーバー起動スクリプト(Windows)
  ├── start-server.sh          # サーバー起動スクリプト(Linux/Mac)

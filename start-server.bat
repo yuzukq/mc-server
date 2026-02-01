@@ -1,24 +1,40 @@
 @echo off
-REM Minecraft Server Startup Script with R2 Sync
-REM This script starts the Minecraft server with automatic world sync
+chcp 65001 > nul
+REM MCサーバー起動スクリプト
+REM サーバーを起動し、ワールドデータを自動同期します
+
 
 echo ========================================
-echo Minecraft Server Startup (with R2 Sync)
+echo     R2同期 -> Minecraftサーバー起動
 echo ========================================
 echo.
 
 cd /d "%~dp0"
 
-REM Check if .env file exists
+REM .envファイルの存在確認
 if not exist .env (
-    echo [ERROR] .env file not found!
-    echo Please copy .env.example to .env and configure your R2 credentials.
+    echo [エラー] .envファイルが見つかりません！
+    echo .env.exampleを.envにコピーして、R2の認証情報を設定してください。
     echo.
     pause
     exit /b 1
 )
 
-echo Starting server...
+REM カスタムRubyイメージのビルドが必要か確認
+docker compose images sync-init -q >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo [情報] 初回起動を検出しました。カスタムRubyイメージをビルド中...
+    echo.
+    docker compose build
+    if %ERRORLEVEL% NEQ 0 (
+        echo [エラー] イメージのビルドに失敗しました
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
+echo サーバーを起動中...
 echo.
 
 docker compose up -d
@@ -26,16 +42,16 @@ docker compose up -d
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo ========================================
-    echo Server started successfully!
+    echo サーバーが正常に起動しました！
     echo ========================================
     echo.
-    echo To view logs: docker logs -f mc_server
-    echo To stop server: run stop-server.bat
+    echo ログを確認: docker logs -f mc_server
+    echo サーバー停止: stop-server.bat を実行
     echo.
 ) else (
     echo.
-    echo [ERROR] Failed to start server
-    echo Check the error messages above
+    echo [エラー] サーバーの起動に失敗しました
+    echo 上記のエラーメッセージを確認してください
     echo.
 )
 

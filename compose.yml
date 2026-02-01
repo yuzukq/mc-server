@@ -1,24 +1,20 @@
 services:
-  # Sync initialization service - runs before server starts
+  # 同期初期化サービス - サーバー起動前に実行
   sync-init:
     container_name: mc_sync_init
-    image: python:3.11-slim
+    build:
+      context: ./docker/ruby
+      dockerfile: Dockerfile
     working_dir: /app
     volumes:
-      - ./scripts/sync.py:/app/sync.py
-      - ./scripts/requirements.txt:/app/requirements.txt
-      - ./.env:/app/.env
+      - ./scripts/sync.rb:/app/sync.rb:ro
       - ./data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: >
-      sh -c "
-        pip install --quiet -r requirements.txt &&
-        python sync.py init
-      "
+    env_file:
+      - .env
+    command: ruby sync.rb init
     restart: "no"
 
-  # Minecraft server
+  # MCサーバー
   server:
     container_name: mc_server
     image: itzg/minecraft-server
@@ -26,10 +22,10 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - "25565:25565" # コンテナ↔ホスト
+      - "25565:25565"
     environment:
       EULA: "TRUE"
-      # Server
+      # サーバー設定
       TZ: "Asia/Tokyo"
       ENABLE_WHITELIST: "FALSE"
       SERVER_NAME: "MyServer"
@@ -40,9 +36,9 @@ services:
       BROADCAST_CONSOLE_TO_OPS: "true"
       BROADCAST_RCON_TO_OPS: "true"
       MOTD: "Minecraft Server by Docker"
-      # Minecraft Version
+      # Minecraftバージョン
       VERSION: 1.19.2
-      # Game Config
+      # ゲーム設定
       SEED: ""
       ALLOW_FLIGHT: "false"
       ALLOW_NETHER: "true"
@@ -73,7 +69,6 @@ services:
       SPAWN_NPCS: "true"
       SPAWN_PROTECTION: 0
       USE_NATIVE_TRANSPORT: "true"
-      # Plugin
       TYPE: "VANILLA" # "PAPER" "FABRIC" ...
     volumes:
       - ./data:/data
@@ -82,31 +77,29 @@ services:
       sync-init:
         condition: service_completed_successfully
 
-  # Sync shutdown service - runs after server stops
+  # 同期シャットダウンサービス - サーバー停止後に実行
   sync-shutdown:
     container_name: mc_sync_shutdown
-    image: python:3.11-slim
+    build:
+      context: ./docker/ruby
+      dockerfile: Dockerfile
     working_dir: /app
     volumes:
-      - ./scripts/sync.py:/app/sync.py
-      - ./scripts/requirements.txt:/app/requirements.txt
-      - ./.env:/app/.env
+      - ./scripts/sync.rb:/app/sync.rb:ro
       - ./data:/app/data
-    environment:
-      - PYTHONUNBUFFERED=1
-    command: >
-      sh -c "
-        pip install --quiet -r requirements.txt &&
-        python sync.py shutdown
-      "
+    env_file:
+      - .env
+    command: ruby sync.rb shutdown
     restart: "no"
     profiles:
       - shutdown
 
-  # Bossbar manager - displays current host on bossbar
+  # Bossbarマネージャー - 現在のホスト情報をbossbarに表示
   bossbar-manager:
     container_name: mc_bossbar
-    image: ruby:3.2-slim
+    build:
+      context: ./docker/ruby
+      dockerfile: Dockerfile
     working_dir: /app
     volumes:
       - ./scripts/bossbar.rb:/app/bossbar.rb:ro

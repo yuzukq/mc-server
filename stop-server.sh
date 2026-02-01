@@ -1,32 +1,32 @@
 #!/bin/bash
-# Minecraft Server Shutdown Script with R2 Sync
-# This script stops the server and uploads world data to R2
+# MCサーバー起動スクリプト
+# サーバーを起動し、ワールドデータを自動同期します
 
 echo "========================================"
-echo "Minecraft Server Shutdown (with R2 Sync)"
+echo "Minecraftサーバー停止 (R2同期)"
 echo "========================================"
 echo
 
 cd "$(dirname "$0")"
 
-echo "Stopping server..."
+echo "サーバーを停止中..."
 docker compose down
 
 echo
-echo "Uploading world data to R2 and releasing lock..."
+echo "ワールドデータをR2にアップロードしてロックを解放中..."
 docker compose run --rm sync-shutdown
 
 if [ $? -eq 0 ]; then
     echo
     echo "========================================"
-    echo "Server stopped successfully!"
-    echo "World data uploaded to R2"
+    echo "サーバーが正常に停止しました！"
+    echo "ワールドデータをR2にアップロードしました"
     echo "========================================"
     echo
 else
     echo
-    echo "[ERROR] Failed to sync data"
-    echo "Please check the error messages above"
+    echo "[エラー] データの同期に失敗しました"
+    echo "上記のエラーメッセージを確認してください"
     echo
     exit 1
 fi
