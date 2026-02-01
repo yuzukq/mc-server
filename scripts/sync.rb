@@ -109,7 +109,9 @@ class R2Sync
   # R2からのダウンロード
   def download_data
     local_data_path = File.expand_path(LOCAL_DATA_DIR)
-    archive_path = File.join(File.dirname(local_data_path), DATA_ARCHIVE_KEY)
+    parent_dir = File.dirname(local_data_path)
+    archive_path = File.join(parent_dir, DATA_ARCHIVE_KEY)
+    temp_dir = File.join(parent_dir, "#{File.basename(local_data_path)}.tmp.#{Process.pid}")
 
     puts '📥 R2からサーバーデータをダウンロード中...'
 
@@ -119,7 +121,7 @@ class R2Sync
         key: DATA_ARCHIVE_KEY
       )
 
-      FileUtils.mkdir_p(File.dirname(archive_path))
+      FileUtils.mkdir_p(parent_dir)
       File.open(archive_path, 'wb') do |file|
         @s3_client.get_object(
           bucket: R2_BUCKET_NAME,
@@ -129,18 +131,31 @@ class R2Sync
         end
       end
 
-      # 既存のデータディレクトリの中身をクリア（マウントポイントなのでディレクトリ自体は削除しない）
-      if Dir.exist?(local_data_path)
-        Dir.each_child(local_data_path) do |item|
-          item_path = File.join(local_data_path, item)
-          FileUtils.rm_rf(item_path)
-        end
-      else
-        FileUtils.mkdir_p(local_data_path)
+      # 一時ディレクトリに展開
+      FileUtils.rm_rf(temp_dir)
+      FileUtils.mkdir_p(temp_dir)
+
+      begin
+        extract_tar_gz(archive_path, temp_dir)
+      rescue StandardError => e
+        # 展開失敗時: 一時ディレクトリとアーカイブをクリーンアップ
+        FileUtils.rm_rf(temp_dir)
+        FileUtils.rm_f(archive_path)
+        raise e
       end
 
-      extract_tar_gz(archive_path, local_data_path)
-      FileUtils.rm_f(archive_path)
+      # 展開成功後: 既存データを削除して一時ディレクトリの内容を移動
+      FileUtils.mkdir_p(local_data_path) unless Dir.exist?(local_data_path)
+
+      # 既存のデータディレクトリの中身をクリア（マウントポイントなのでディレクトリ自体は削除しない）
+      Dir.each_child(local_data_path) do |item|
+        FileUtils.rm_rf(File.join(local_data_path, item))
+      end
+
+      # 一時ディレクトリの内容を移動
+      Dir.each_child(temp_dir) do |item|
+        FileUtils.mv(File.join(temp_dir, item), local_data_path)
+      end
 
       puts "✅ サーバーデータをダウンロードして展開しました: #{local_data_path}"
     rescue Aws::S3::Errors::NotFound
@@ -148,6 +163,10 @@ class R2Sync
     rescue Aws::S3::Errors::ServiceError => e
       puts "❌ サーバーデータのダウンロードエラー: #{e.message}"
       raise
+    ensure
+      # 一時ディレクトリとアーカイブをクリーンアップ
+      FileUtils.rm_rf(temp_dir) if Dir.exist?(temp_dir)
+      FileUtils.rm_f(archive_path) if File.exist?(archive_path)
     end
   end
 
