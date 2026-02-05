@@ -37,7 +37,9 @@ services:
       BROADCAST_RCON_TO_OPS: "true"
       MOTD: "Minecraft Server by Docker"
       # Minecraftバージョン
-      VERSION: 1.19.2
+      VERSION: 1.20.1
+      # メモリ設定 (MODサーバー用)
+      MEMORY: "4G"
       # ゲーム設定
       SEED: ""
       ALLOW_FLIGHT: "false"
@@ -69,7 +71,7 @@ services:
       SPAWN_NPCS: "true"
       SPAWN_PROTECTION: 0
       USE_NATIVE_TRANSPORT: "true"
-      TYPE: "VANILLA" # "PAPER" "FABRIC" ...
+      TYPE: "FORGE" # "VANILLA" "PAPER" "FABRIC" ...
     volumes:
       - ./data:/data
       - ./datapack/host_bossbar:/data/world/datapacks/host_bossbar:ro
