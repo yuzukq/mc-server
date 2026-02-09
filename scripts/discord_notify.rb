@@ -7,6 +7,7 @@
 require 'net/http'
 require 'json'
 require 'uri'
+require 'time'
 require_relative 'lib/rcon_client'
 
 # =============================================================================
@@ -27,13 +28,16 @@ LOG_FILE_PATH = '/app/logs/latest.log'
 # =============================================================================
 
 class DiscordWebhook
+  COLOR_GREEN = 0x57F287
+  COLOR_RED = 0xED4245
+
   def initialize(webhook_url)
     @webhook_url = webhook_url
     @enabled = !webhook_url.empty?
   end
 
-  def send(message)
-    puts "[Discord] #{message}"
+  def send(payload, log_message: nil)
+    puts "[Discord] #{log_message || payload.to_json}"
 
     return unless @enabled
 
@@ -42,7 +46,7 @@ class DiscordWebhook
     http.use_ssl = true
 
     request = Net::HTTP::Post.new(uri.request_uri, { 'Content-Type' => 'application/json' })
-    request.body = { content: message }.to_json
+    request.body = payload.to_json
 
     response = http.request(request)
 
@@ -131,9 +135,17 @@ class DiscordNotifier
     @rcon = wait_for_server
 
     # 起動通知
-    @webhook.send(
-      "📢 **サーバ起動通知**: #{HOST_DISPLAY_NAME} さんがホストとして起動しました。\nTailscaleの接続先に注意して参加してください。"
-    )
+    @webhook.send({
+      embeds: [{
+        title: '🟢 サーバー起動',
+        description: "**#{HOST_DISPLAY_NAME}** さんがホストとして起動しました。",
+        color: DiscordWebhook::COLOR_GREEN,
+        fields: [
+          { name: '📋 お知らせ', value: 'Tailscaleの接続先に注意して参加してください。' }
+        ],
+        timestamp: Time.now.utc.iso8601
+      }]
+    }, log_message: "サーバ起動通知: #{HOST_DISPLAY_NAME}")
 
     # ログ監視開始
     puts '📋 ログ監視を開始します...'
@@ -184,9 +196,27 @@ class DiscordNotifier
 
     case event
     when :join
-      @webhook.send("🟢 **#{player_name}** がサーバーに参加しました（現在 #{count}人）")
+      @webhook.send({
+        embeds: [{
+          description: "🟢 **#{player_name}** がサーバーに参加しました",
+          color: DiscordWebhook::COLOR_GREEN,
+          fields: [
+            { name: 'オンライン', value: "#{count}人", inline: true }
+          ],
+          timestamp: Time.now.utc.iso8601
+        }]
+      }, log_message: "#{player_name} が参加（#{count}人）")
     when :leave
-      @webhook.send("🔴 **#{player_name}** がサーバーから退出しました（現在 #{count}人）")
+      @webhook.send({
+        embeds: [{
+          description: "🔴 **#{player_name}** がサーバーから退出しました",
+          color: DiscordWebhook::COLOR_RED,
+          fields: [
+            { name: 'オンライン', value: "#{count}人", inline: true }
+          ],
+          timestamp: Time.now.utc.iso8601
+        }]
+      }, log_message: "#{player_name} が退出（#{count}人）")
     end
   end
 
@@ -217,7 +247,14 @@ class DiscordNotifier
     return if @shutdown_sent
 
     @shutdown_sent = true
-    @webhook.send('📢 **サーバ停止通知**: サーバーが停止しました。')
+    @webhook.send({
+      embeds: [{
+        title: '🔴 サーバー停止',
+        description: 'サーバーが停止しました。',
+        color: DiscordWebhook::COLOR_RED,
+        timestamp: Time.now.utc.iso8601
+      }]
+    }, log_message: 'サーバ停止通知')
     @rcon&.disconnect
   end
 end
