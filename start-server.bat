@@ -1,8 +1,7 @@
 @echo off
 chcp 65001 > nul
 REM MCサーバー起動スクリプト
-REM サーバーを起動し、ワールドデータを自動同期します
-
+REM サーバーを起動し、自動バックアップスケジューラを設定します
 
 echo ========================================
 echo     R2同期 -> Minecraftサーバー起動
@@ -44,6 +43,14 @@ if %ERRORLEVEL% EQU 0 (
     echo ========================================
     echo サーバーが正常に起動しました！
     echo ========================================
+    echo.
+    echo バックアップスケジューラを設定中 (30分間隔)...
+    schtasks /create /tn "MinecraftBackup" /tr ""%~dp0backup.bat"" /sc minute /mo 30 /f >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        echo バックアップスケジューラを登録しました。
+    ) else (
+        echo [警告] バックアップスケジューラの登録に失敗しました。
+    )
     echo.
     echo ログを確認: docker logs -f mc_server
     echo サーバー停止: stop-server.bat を実行

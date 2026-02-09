@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 > nul
 REM MCサーバー停止スクリプト
-REM サーバーを停止し、ワールドデータを自動同期します
+REM バックアップスケジューラを削除し、サーバーを停止してワールドデータを同期します
 
 echo ========================================
 echo     Minecraftサーバー停止 -> R2同期
@@ -9,6 +9,15 @@ echo ========================================
 echo.
 
 cd /d "%~dp0"
+
+echo バックアップスケジューラを削除中...
+schtasks /delete /tn "MinecraftBackup" /f >nul 2>&1
+if %ERRORLEVEL% EQU 0 (
+    echo バックアップスケジューラを削除しました。
+) else (
+    echo [情報] バックアップスケジューラは登録されていませんでした。
+)
+echo.
 
 echo サーバーを停止中...
 docker compose down

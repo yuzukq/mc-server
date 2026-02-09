@@ -1,13 +1,19 @@
 #!/bin/bash
-# MCサーバー起動スクリプト
-# サーバーを起動し、ワールドデータを自動同期します
+# MCサーバー停止スクリプト
+# バックアップスケジューラを削除し、サーバーを停止してワールドデータを同期します
 
 echo "========================================"
-echo "Minecraftサーバー停止 (R2同期)"
+echo "    Minecraftサーバー停止 -> R2同期"
 echo "========================================"
 echo
 
 cd "$(dirname "$0")"
+
+echo "バックアップスケジューラを削除中..."
+# cronジョブを削除
+crontab -l 2>/dev/null | grep -v "MinecraftBackup" | crontab -
+echo "バックアップスケジューラを削除しました。"
+echo
 
 echo "サーバーを停止中..."
 docker compose down
