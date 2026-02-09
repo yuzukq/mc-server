@@ -9,8 +9,13 @@ services:
     volumes:
       - ./scripts/sync.rb:/app/sync.rb:ro
       - ./data:/app/data
-    env_file:
-      - .env
+    environment:
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      LOCAL_DATA_DIR: ${LOCAL_DATA_DIR:-./data}
     command: ruby sync.rb init
     restart: "no"
 
@@ -22,7 +27,7 @@ services:
     tty: true
     stdin_open: true
     ports:
-      - "25565:25565"
+      - "${MC_PORT:-25565}:25565"
     environment:
       EULA: "TRUE"
       # サーバー設定
@@ -88,8 +93,13 @@ services:
     volumes:
       - ./scripts/sync.rb:/app/sync.rb:ro
       - ./data:/app/data
-    env_file:
-      - .env
+    environment:
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME}
+      R2_ENDPOINT: ${R2_ENDPOINT}
+      LOCAL_DATA_DIR: ${LOCAL_DATA_DIR:-./data}
     command: ruby sync.rb shutdown
     restart: "no"
     profiles:

@@ -1,6 +1,8 @@
 #!/bin/bash
-# MCサーバー起動スクリプト
-# サーバーを起動し、ワールドデータを自動同期します
+# MCサーバー停止スクリプト
+# サーバーを停止し、ワールドデータを自動同期します
+# 使い方: ./stop-server.sh [環境名]
+#   例: ./stop-server.sh dev  → .env.dev を使用
 
 echo "========================================"
 echo "Minecraftサーバー停止 (R2同期)"
@@ -9,12 +11,22 @@ echo
 
 cd "$(dirname "$0")"
 
+# 環境引数の処理
+ENV_ARG="${1:-}"
+if [ -n "$ENV_ARG" ]; then
+    ENV_FILE=".env.${ENV_ARG}"
+    echo "[${ENV_ARG}モード] ${ENV_FILE} を使用します"
+    echo
+else
+    ENV_FILE=".env"
+fi
+
 echo "サーバーを停止中..."
-docker compose down
+docker compose --env-file "$ENV_FILE" down
 
 echo
 echo "ワールドデータをR2にアップロードしてロックを解放中..."
-docker compose run --rm sync-shutdown
+docker compose --env-file "$ENV_FILE" run --rm sync-shutdown
 
 if [ $? -eq 0 ]; then
     echo

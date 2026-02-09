@@ -1,7 +1,10 @@
 @echo off
 chcp 65001 > nul
+setlocal enabledelayedexpansion
 REM MCサーバー起動スクリプト
 REM サーバーを起動し、ワールドデータを自動同期します
+REM 使い方: start-server.bat [環境名]
+REM   例: start-server.bat dev  → .env.dev を使用
 
 
 echo ========================================
@@ -11,21 +14,29 @@ echo.
 
 cd /d "%~dp0"
 
+REM 環境引数の処理
+set "ENV_FILE=.env"
+if not "%~1"=="" (
+    set "ENV_FILE=.env.%~1"
+    echo [%~1モード] !ENV_FILE! を使用します
+    echo.
+)
+
 REM .envファイルの存在確認
-if not exist .env (
-    echo [エラー] .envファイルが見つかりません！
-    echo .env.exampleを.envにコピーして、R2の認証情報を設定してください。
+if not exist !ENV_FILE! (
+    echo [エラー] !ENV_FILE!ファイルが見つかりません！
+    echo .env.exampleを!ENV_FILE!にコピーして、R2の認証情報を設定してください。
     echo.
     pause
     exit /b 1
 )
 
 REM カスタムRubyイメージのビルドが必要か確認
-docker compose images sync-init -q >nul 2>&1
+docker compose --env-file !ENV_FILE! images sync-init -q >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo [情報] 初回起動を検出しました。カスタムRubyイメージをビルド中...
     echo.
-    docker compose build
+    docker compose --env-file !ENV_FILE! build
     if %ERRORLEVEL% NEQ 0 (
         echo [エラー] イメージのビルドに失敗しました
         pause
@@ -37,7 +48,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo サーバーを起動中...
 echo.
 
-docker compose up -d
+docker compose --env-file !ENV_FILE! up -d
 
 if %ERRORLEVEL% EQU 0 (
     echo.
