@@ -57,7 +57,11 @@ if %ERRORLEVEL% EQU 0 (
     echo ========================================
     echo.
     echo ログを確認: docker logs -f mc_server
-    echo サーバー停止: stop-server.bat を実行
+    if not "%~1"=="" (
+        echo サーバー停止: stop-server.bat %~1 を実行
+    ) else (
+        echo サーバー停止: stop-server.bat を実行
+    )
     echo.
 ) else (
     echo.

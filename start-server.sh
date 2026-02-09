@@ -51,7 +51,11 @@ if [ $? -eq 0 ]; then
     echo "========================================"
     echo
     echo "ログを確認: docker logs -f mc_server"
-    echo "サーバー停止: ./stop-server.sh を実行"
+    if [ -n "$ENV_ARG" ]; then
+        echo "サーバー停止: ./stop-server.sh ${ENV_ARG} を実行"
+    else
+        echo "サーバー停止: ./stop-server.sh を実行"
+    fi
     echo
 else
     echo
