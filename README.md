@@ -156,6 +156,28 @@ docker ps -a --filter "name=mc_"
 docker port mc_server
 ```
 
+### 開発環境
+
+本番のR2バケットに影響を与えずに開発・テストしたい場合、専用の環境ファイルを使って起動できます。
+
+```bash
+# .env.example をコピーして開発用環境ファイルを作成
+cp .env.example .env.dev
+
+# .env.dev を編集: 開発用バケット名を設定
+# 必要に応じて MC_PORT を変更（本番と同時起動する場合）
+
+# 開発環境で起動・停止
+./start-server.sh dev
+./stop-server.sh dev
+```
+
+Windows の場合:
+```cmd
+start-server.bat dev
+stop-server.bat dev
+```
+
 ## ロック機構について
 
 ### ロックの仕組み
