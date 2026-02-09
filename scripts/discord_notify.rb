@@ -28,7 +28,9 @@ LOG_FILE_PATH = '/app/logs/latest.log'
 # =============================================================================
 
 class DiscordWebhook
+  COLOR_BLUE = 0x5865F2
   COLOR_GREEN = 0x57F287
+  COLOR_ORANGE = 0xF0B232
   COLOR_RED = 0xED4245
 
   def initialize(webhook_url)
@@ -137,9 +139,9 @@ class DiscordNotifier
     # 起動通知
     @webhook.send({
       embeds: [{
-        title: '🟢 サーバー起動',
+        title: 'サーバー起動',
         description: "**#{HOST_DISPLAY_NAME}** さんがホストとして起動しました。",
-        color: DiscordWebhook::COLOR_GREEN,
+        color: DiscordWebhook::COLOR_BLUE,
         fields: [
           { name: '📋 お知らせ', value: 'Tailscaleの接続先に注意して参加してください。' }
         ],
@@ -210,7 +212,7 @@ class DiscordNotifier
       @webhook.send({
         embeds: [{
           description: "🔴 **#{player_name}** がサーバーから退出しました",
-          color: DiscordWebhook::COLOR_RED,
+          color: DiscordWebhook::COLOR_ORANGE,
           fields: [
             { name: 'オンライン', value: "#{count}人", inline: true }
           ],
@@ -249,7 +251,7 @@ class DiscordNotifier
     @shutdown_sent = true
     @webhook.send({
       embeds: [{
-        title: '🔴 サーバー停止',
+        title: 'サーバー停止',
         description: 'サーバーが停止しました。',
         color: DiscordWebhook::COLOR_RED,
         timestamp: Time.now.utc.iso8601
