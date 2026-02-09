@@ -164,7 +164,7 @@ docker port mc_server
 # .env.example をコピーして開発用環境ファイルを作成
 cp .env.example .env.dev
 
-# .env.dev を編集: 開発用バケット名、ENV_FILE=.env.dev 等を設定
+# .env.dev を編集: 開発用バケット名を設定
 # 必要に応じて MC_PORT を変更（本番と同時起動する場合）
 
 # 開発環境で起動・停止
