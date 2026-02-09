@@ -116,3 +116,24 @@ services:
       server:
         condition: service_started
     restart: "no"
+
+  # 手動バックアップ用サービス
+  # 定期実行はWindowsタスクスケジューラ/cronで backup.bat/backup.sh を実行
+  backup:
+    container_name: mc_backup
+    build:
+      context: ./docker/ruby
+      dockerfile: Dockerfile
+    working_dir: /app
+    volumes:
+      - ./scripts/backup.rb:/app/backup.rb:ro
+      - ./data:/app/data:ro
+    environment:
+      - RCON_HOST=server
+      - RCON_PORT=25575
+      - RCON_PASSWORD=${RCON_PASSWORD:-minecraft}
+    env_file:
+      - .env
+    command: ruby backup.rb now
+    profiles:
+      - manual
