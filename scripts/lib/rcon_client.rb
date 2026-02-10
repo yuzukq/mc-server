@@ -78,7 +78,7 @@ class RconClient
     data = @socket.read(size)
     raise ConnectionError, 'パケットが不完全です' unless data && data.bytesize == size
 
-    id, type = data[0, 8].unpack('VV')
+    id, type = data[0, 8].unpack('l<V')
     body = data[8..-3] || '' # 末尾のnullを除去
 
     [id, type, body]
