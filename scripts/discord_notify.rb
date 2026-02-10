@@ -27,7 +27,7 @@ LOG_FILE_PATH = '/app/logs/latest.log'
 # =============================================================================
 
 class DiscordWebhook
-  COLOR_BLUE = 0x5865F2
+  COLOR_BLUE = 0x58b2f2
   COLOR_GREEN = 0x57F287
   COLOR_ORANGE = 0xF0B232
   COLOR_RED = 0xED4245
@@ -45,6 +45,9 @@ class DiscordWebhook
     uri = URI.parse(@webhook_url)
     http = Net::HTTP.new(uri.host, uri.port)
     http.use_ssl = true
+    http.open_timeout = 5
+    http.read_timeout = 10
+
 
     request = Net::HTTP::Post.new(uri.request_uri, { 'Content-Type' => 'application/json' })
     request.body = payload.to_json
