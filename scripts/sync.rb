@@ -156,6 +156,9 @@ class R2Sync
         FileUtils.mv(File.join(temp_dir, item), local_data_path)
       end
 
+      # 所有権を統一（UID=1000で実行）
+      fix_ownership(local_data_path)
+
       puts "✅ サーバーデータをダウンロードして展開しました: #{local_data_path}"
     rescue Aws::S3::Errors::NotFound
       puts 'ℹ️  R2にサーバーデータがありません。新規サーバーとして起動します。'
@@ -217,9 +220,15 @@ class R2Sync
   def create_tar_gz(source_dir, archive_path)
     abs_archive_path = File.expand_path(archive_path)
     Dir.chdir(source_dir) do
-      result = system('tar', '-czf', abs_archive_path, '.')
+      result = system('tar', '--owner=1000', '--group=1000', '-czf', abs_archive_path, '.')
       raise 'tarアーカイブの作成に失敗しました' unless result
     end
+  end
+
+  # ファイル所有権をUID=1000:GID=1000に統一
+  def fix_ownership(path)
+    result = system('chown', '-R', '1000:1000', path)
+    raise "所有権の修正に失敗しました: #{path}" unless result
   end
 
   # tar.gzアーカイブを展開
