@@ -78,29 +78,43 @@ class LogWatcher
   def start(&block)
     @running = true
 
-    # ログファイルが存在するまで待機
-    until File.exist?(@log_path)
-      puts "[LogWatcher] ログファイル待機中: #{@log_path}"
-      sleep 1
-      return unless @running
-    end
+    loop do
+      break unless @running
 
-    File.open(@log_path, 'r') do |file|
-      # 末尾にシーク（既存ログはスキップ）
-      file.seek(0, IO::SEEK_END)
+      until File.exist?(@log_path)
+        puts "[LogWatcher] ログファイル待機中: #{@log_path}"
+        sleep 1
+        return unless @running
+      end
 
-      while @running
-        line = file.gets
-        if line
-          line = line.strip
-          case line
-          when JOIN_PATTERN
-            block.call(:join, ::Regexp.last_match(1))
-          when LEAVE_PATTERN
-            block.call(:leave, ::Regexp.last_match(1))
+      current_inode = File.stat(@log_path).ino
+
+      File.open(@log_path, 'r') do |file|
+        file.seek(0, IO::SEEK_END)
+
+        while @running
+          line = file.gets
+          if line
+            line = line.strip
+            case line
+            when JOIN_PATTERN
+              block.call(:join, ::Regexp.last_match(1))
+            when LEAVE_PATTERN
+              block.call(:leave, ::Regexp.last_match(1))
+            end
+          else
+            begin
+              new_inode = File.stat(@log_path).ino
+              if new_inode != current_inode
+                puts '[LogWatcher] ログローテーションを検出しました'
+                break
+              end
+            rescue Errno::ENOENT
+              puts '[LogWatcher] ログファイルが一時的に見つかりません（ローテーション中）'
+              break
+            end
+            sleep 0.5
           end
-        else
-          sleep 0.5
         end
       end
     end
