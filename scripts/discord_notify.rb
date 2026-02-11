@@ -176,6 +176,11 @@ class DiscordNotifier
     puts '⏳ Minecraftサーバーの起動を待機中...'
 
     MAX_RETRIES.times do |i|
+      if @stopping
+        puts '停止シグナルを受信したため待機を中断します'
+        exit 1
+      end
+
       rcon = RconClient.new(RCON_HOST, RCON_PORT, RCON_PASSWORD)
       rcon.connect
 
@@ -186,6 +191,11 @@ class DiscordNotifier
     rescue RconClient::ConnectionError => e
       puts "   試行 #{i + 1}/#{MAX_RETRIES}: #{e.message}"
       sleep RETRY_INTERVAL
+      if @stopping
+        rcon&.disconnect
+        puts '停止シグナルを受信したため待機を中断します'
+        exit 1
+      end
     rescue RconClient::AuthenticationError => e
       puts "❌ 認証失敗: #{e.message}"
       exit 1
