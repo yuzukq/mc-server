@@ -40,7 +40,7 @@ class DiscordWebhook
   def send(payload, log_message: nil)
     puts "[Discord] #{log_message || payload.to_json}"
 
-    return unless @enabled
+    return if !@enabled
 
     uri = URI.parse(@webhook_url)
     http = Net::HTTP.new(uri.host, uri.port)
@@ -54,7 +54,7 @@ class DiscordWebhook
 
     response = http.request(request)
 
-    unless response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPNoContent)
+    if !(response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPNoContent))
       puts "[Discord] Webhook送信失敗: #{response.code} #{response.message}"
     end
   rescue StandardError => e
@@ -78,29 +78,43 @@ class LogWatcher
   def start(&block)
     @running = true
 
-    # ログファイルが存在するまで待機
-    until File.exist?(@log_path)
-      puts "[LogWatcher] ログファイル待機中: #{@log_path}"
-      sleep 1
-      return unless @running
-    end
+    loop do
+      break if !@running
 
-    File.open(@log_path, 'r') do |file|
-      # 末尾にシーク（既存ログはスキップ）
-      file.seek(0, IO::SEEK_END)
+      until File.exist?(@log_path)
+        puts "[LogWatcher] ログファイル待機中: #{@log_path}"
+        sleep 1
+        return if !@running
+      end
 
-      while @running
-        line = file.gets
-        if line
-          line = line.strip
-          case line
-          when JOIN_PATTERN
-            block.call(:join, ::Regexp.last_match(1))
-          when LEAVE_PATTERN
-            block.call(:leave, ::Regexp.last_match(1))
+      current_inode = File.stat(@log_path).ino
+
+      File.open(@log_path, 'r') do |file|
+        file.seek(0, IO::SEEK_END)
+
+        while @running
+          line = file.gets
+          if line
+            line = line.strip
+            case line
+            when JOIN_PATTERN
+              block.call(:join, ::Regexp.last_match(1))
+            when LEAVE_PATTERN
+              block.call(:leave, ::Regexp.last_match(1))
+            end
+          else
+            begin
+              new_inode = File.stat(@log_path).ino
+              if new_inode != current_inode
+                puts '[LogWatcher] ログローテーションを検出しました'
+                break
+              end
+            rescue Errno::ENOENT
+              puts '[LogWatcher] ログファイルが一時的に見つかりません（ローテーション中）'
+              break
+            end
+            sleep 0.5
           end
-        else
-          sleep 0.5
         end
       end
     end
@@ -176,6 +190,11 @@ class DiscordNotifier
     puts '⏳ Minecraftサーバーの起動を待機中...'
 
     MAX_RETRIES.times do |i|
+      if @stopping
+        puts '停止シグナルを受信したため待機を中断します'
+        exit 1
+      end
+
       rcon = RconClient.new(RCON_HOST, RCON_PORT, RCON_PASSWORD)
       rcon.connect
 
@@ -186,6 +205,11 @@ class DiscordNotifier
     rescue RconClient::ConnectionError => e
       puts "   試行 #{i + 1}/#{MAX_RETRIES}: #{e.message}"
       sleep RETRY_INTERVAL
+      if @stopping
+        rcon&.disconnect
+        puts '停止シグナルを受信したため待機を中断します'
+        exit 1
+      end
     rescue RconClient::AuthenticationError => e
       puts "❌ 認証失敗: #{e.message}"
       exit 1
