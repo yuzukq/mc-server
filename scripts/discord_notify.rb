@@ -198,7 +198,7 @@ class DiscordNotifier
     MAX_RETRIES.times do |i|
       if @stopping
         puts '停止シグナルを受信したため待機を中断します'
-        exit 1
+        exit 0
       end
 
       rcon = RconClient.new(RCON_HOST, RCON_PORT, RCON_PASSWORD)
@@ -214,7 +214,7 @@ class DiscordNotifier
       if @stopping
         rcon&.disconnect
         puts '停止シグナルを受信したため待機を中断します'
-        exit 1
+        exit 0
       end
     rescue RconClient::AuthenticationError => e
       puts "❌ 認証失敗: #{e.message}"
