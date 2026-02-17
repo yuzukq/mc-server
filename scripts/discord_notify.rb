@@ -279,6 +279,7 @@ class DiscordNotifier
 
   def shutdown
     return if @shutdown_sent
+    return if !@rcon
 
     @shutdown_sent = true
     @webhook.send({
