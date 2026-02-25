@@ -37,7 +37,7 @@ services:
       SERVER_NAME: "MyServer"
       SERVER_PORT: "25565"
       ENABLE_JMX: "false"
-      EXEC_DIRECTLY: "true"
+      STOP_DURATION: "110"
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"
       BROADCAST_CONSOLE_TO_OPS: "true"
