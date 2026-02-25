@@ -24,6 +24,7 @@ services:
     container_name: mc_server
     image: itzg/minecraft-server
     restart: unless-stopped
+    stop_grace_period: 120s
     tty: true
     stdin_open: true
     ports:
@@ -36,6 +37,7 @@ services:
       SERVER_NAME: "MyServer"
       SERVER_PORT: "25565"
       ENABLE_JMX: "false"
+      EXEC_DIRECTLY: "true"
       ENABLE_RCON: "true"
       RCON_PASSWORD: "${RCON_PASSWORD:-minecraft}"
       BROADCAST_CONSOLE_TO_OPS: "true"
