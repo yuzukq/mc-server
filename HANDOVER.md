@@ -2,26 +2,43 @@
 
 ## 作業ブランチ
 
-`fix/journeymap-world-uuid` (PRを作成済み、検証運用中)
+`fix/journeymap-world-uuid` (PR close済み。サーバ側の問題ではなかった)
 
 ## 行った作業の要約
 
 ### 問題: JourneyMapの探索記録がリセットされる
 
-サーバー再起動時や別の人がホストした際に、JourneyMapのマップ探索記録が消える問題を調査・修正した。
+サーバー再起動時や別の人がホストした際に、JourneyMapのマップ探索記録が消える問題を調査した。
 
 ### 調査の流れ
 
 1. `data/journeymap/` にはサーバー側の設定ファイルのみで、マップタイルはクライアント側に保存されることを確認
 2. クライアント側のJourneyMapログから、マップデータのフォルダが `World UID` で識別されていることを特定
 3. `world/data/WorldUUID.dat` にWorld UIDが格納されていることを発見（NBTファイルをpython nbtライブラリで解析）
-4. このファイルはJourneyMapサーバーMODがForgeのSavedData APIで生成するもので、ワールド保存時にディスクに書き込まれる
-5. `docker compose down` のデフォルト `stop_grace_period`（10秒）ではMOD入りForgeサーバーのシャットダウンが間に合わず、WorldUUID.datが保存されないまま強制終了されていた
+4. WorldUUID.dat の内容を複数環境で比較し、UUID (`1c17bd9a-a0e3-4b39-8578-3235440a923f`) が同一であることを確認
+5. **サーバ側のUUID消失が原因ではない**ことが判明
 
-### 修正内容 (`compose.yml`)
+### 真の原因（判明済み）
 
-- `stop_grace_period: 120s` を追加: SIGTERM→SIGKILLの猶予を120秒に延長
-- `EXEC_DIRECTLY: "true"` を追加: SIGTERMをJavaプロセスに直接送信
+JourneyMapクライアント側のデータ保存パスの仕様が原因:
+
+| 接続方法 | 保存パス | ホスト変更時 |
+|---|---|---|
+| ダイレクト接続 | `Minecraft~_<UUID>` | UUIDが同じなので影響なし |
+| サーバの追加(プロファイル) | `<サーバ名>_<UUID>` | サーバ名が変わると別フォルダ → リセット |
+
+ホストごとに別のサーバプロファイルを作成していたクライアント環境で、サーバ名がパスに含まれるため別フォルダに保存され、探索記録がリセットされたように見えていた。
+
+### 対処
+
+- **暫定対処**: プロファイルを使用せず、各自のTailnet上の接続先にダイレクト接続で参加する
+- **恒常対処**: ダイナミックDNSを導入して同じプロファイル（同じサーバ名）を使い続けられるようにする
+
+### 誤った修正（取り下げ済み）
+
+compose.ymlへの以下の変更はPR close済み。サーバ側が原因ではなかったため不要:
+- `stop_grace_period: 120s`
+- `EXEC_DIRECTLY: "true"` → coderabbitレビューで逆効果と指摘された（ラッパーのRCON経由 `/stop` をバイパスしてしまう。さらに上流で非推奨・削除予定）
 
 ## 決定事項
 
@@ -31,21 +48,24 @@
 
 ## 未完了タスク
 
-- [ ] **検証運用**: 修正後のサーバーでJourneyMapのWorld UIDが再起動後も維持されるか確認（`World UID is set to:` ログで確認）
-- [ ] **異なるホストでの検証**: 別の人がホストした場合にもUUIDが維持されるか確認
-- [ ] **PRのマージ**: 検証完了後にmainへマージ
+- [ ] **恒常対処**: ダイナミックDNS導入の検討（同一サーバ名での接続を可能にする）
 
 ## 陥った落とし穴と学んだ教訓
 
-### JourneyMapのデータ構造の誤解に注意
-- `data/journeymap/` はサーバー設定のみ。実際のマップ探索データはクライアント側の `.minecraft/journeymap/data/mp/` に保存される
-- マップフォルダの識別は `world/data/WorldUUID.dat` のUUIDに基づく（IPアドレスではない、`useWorldId: true` の場合）
+### JourneyMapのデータ保存パスの仕様
+- クライアント側の `.minecraft/journeymap/data/mp/` に保存される
+- **ダイレクト接続**: `Minecraft~_<UUID>` — UUIDのみで識別
+- **サーバの追加(プロファイル)**: `<サーバ名>_<UUID>` — サーバ名+UUIDで識別
+- `useWorldId: true` でもサーバ名部分は接続方法に依存する
 
-### WorldUUID.datの所在
-- `world/data/WorldUUID.dat` はForge/Minecraft標準のファイルではなく、JourneyMapサーバーMODがSavedData APIで生成するファイル
-- level.datにはWorld UUIDは格納されていない（python nbtライブラリで確認済み）
+### サーバ側のWorldUUID.datは問題なかった
+- `world/data/WorldUUID.dat` はJourneyMapサーバーMODがSavedData APIで生成するファイル
+- 複数環境で同一UUIDが維持されていることを確認済み
+- シャットダウン問題（grace period不足）は今回の原因ではなかった
 
-### Dockerのgraceful shutdown
-- `docker compose down` のデフォルトは10秒でSIGKILL。MODサーバーには短すぎる
-- `EXEC_DIRECTLY: true` がないと、itzgイメージのラッパースクリプトがSIGTERMを受け取り、Javaプロセスに適切に伝播しない可能性がある
-- SavedDataファイルはワールド保存時にのみディスクに書き込まれるため、シャットダウンが不完全だとファイルが失われる
+### EXEC_DIRECTLYの罠
+- `EXEC_DIRECTLY: true` はitzg/minecraft-serverのラッパー（mc-server-runner）をバイパスする
+- ラッパーはSIGTERM受信時にRCON経由で `/stop` を送信するグレースフルシャットダウンの仕組み
+- EXEC_DIRECTLYを有効にするとこの機能が無効になり、逆にシャットダウンが不完全になる
+- 上流で2025年12月に非推奨化・削除予定（PR #3837）
+- 正しい構成: ラッパーに任せ、`STOP_DURATION` で待機時間を調整
