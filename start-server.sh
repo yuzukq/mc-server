@@ -57,23 +57,10 @@ if ! docker compose --env-file "$ENV_FILE" images sync-init -q 2>/dev/null | gre
     echo
 fi
 
-echo "同期を初期化中..."
-echo
-
-docker compose --env-file "$ENV_FILE" up sync-init
-
-if [ $? -ne 0 ]; then
-    echo
-    echo "[エラー] 同期の初期化に失敗しました"
-    echo
-    exit 1
-fi
-
-echo
 echo "サーバーを起動中..."
 echo
 
-docker compose --env-file "$ENV_FILE" up -d --no-deps server bossbar-manager discord-notify
+docker compose --env-file "$ENV_FILE" up -d
 
 if [ $? -eq 0 ]; then
     echo
