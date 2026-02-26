@@ -28,6 +28,24 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
+# 本番環境ガード: 対話的ターミナル以外からの本番操作をブロック
+if [ -z "$ENV_ARG" ]; then
+    if ! [ -t 0 ]; then
+        echo "[エラー] 本番環境はターミナルから直接のみ実行できます。"
+        echo "AI・スクリプト・パイプ経由での本番操作は禁止されています。"
+        echo "開発環境を使用する場合: ./start-server.sh dev"
+        echo
+        exit 1
+    fi
+    echo "========================================"
+    echo "[警告] 本番環境で操作します"
+    echo "本番R2バケットにアクセスします。"
+    echo "続行するには Enter を押してください (Ctrl+C でキャンセル)"
+    echo "========================================"
+    read -r
+    echo
+fi
+
 # カスタムRubyイメージのビルドチェック
 if ! docker compose --env-file "$ENV_FILE" images sync-init -q 2>/dev/null | grep -q .; then
     echo "[情報] 初回起動を検出しました。カスタムRubyイメージをビルド中..."

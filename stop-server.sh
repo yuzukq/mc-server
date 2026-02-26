@@ -21,6 +21,24 @@ else
     ENV_FILE=".env"
 fi
 
+# 本番環境ガード: 対話的ターミナル以外からの本番操作をブロック
+if [ -z "$ENV_ARG" ]; then
+    if ! [ -t 0 ]; then
+        echo "[エラー] 本番環境はターミナルから直接のみ実行できます。"
+        echo "AI・スクリプト・パイプ経由での本番操作は禁止されています。"
+        echo "開発環境を使用する場合: ./stop-server.sh dev"
+        echo
+        exit 1
+    fi
+    echo "========================================"
+    echo "[警告] 本番環境で操作します"
+    echo "本番R2バケットにアクセスします。"
+    echo "続行するには Enter を押してください (Ctrl+C でキャンセル)"
+    echo "========================================"
+    read -r
+    echo
+fi
+
 echo "サーバーを停止中..."
 docker compose --env-file "$ENV_FILE" down
 
