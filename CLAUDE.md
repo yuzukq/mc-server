@@ -183,11 +183,11 @@ docker compose run --rm sync-init ruby /app/sync.rb upload
 
 - **frozen string literal:** すべての Ruby ファイルは `# frozen_string_literal: true` で始める。
 - **クラスベースのアーキテクチャ:** 各スクリプトは役割が明確なクラスを 1 つ以上公開する。
+- **Ruby 慣用表現に従う:** `if !condition` の代わりに `unless condition` を使う。ただし `||` や `&&` を含む複合条件では、ド・モルガン変換による可読性低下を避けるため `if !` を許容する。
 - **コメントは日本語** — 意図的なものであり、維持すること。
 - **コンソール出力に絵文字を使用** — 視覚的な状態把握のために使用しているため、このスタイルを維持すること。
 - **エラーハンドリング:** ドメインエラーにはカスタム例外クラスを使用。R2 操作では `Aws::S3::Errors::ServiceError` を rescue する。
 - **テストフレームワークなし:** テストは Docker 環境を直接操作する bash スクリプト (`test/test_log_rotation.sh`) 1 つのみ。
-- **否定条件に `unless` を使用しない** — `unless bool` ではなく `if !bool` スタイルを使用すること (コミット `b324b63` 参照)。
 - **所有権:** Docker ボリューム内のワールドデータファイルは必ず UID/GID 1000 で所有すること。
 
 ---

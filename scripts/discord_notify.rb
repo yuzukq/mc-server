@@ -40,7 +40,7 @@ class DiscordWebhook
   def send(payload, log_message: nil)
     puts "[Discord] #{log_message || payload.to_json}"
 
-    return if !@enabled
+    return unless @enabled
 
     uri = URI.parse(@webhook_url)
     http = Net::HTTP.new(uri.host, uri.port)
@@ -54,7 +54,7 @@ class DiscordWebhook
 
     response = http.request(request)
 
-    if !(response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPNoContent))
+    unless response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPNoContent)
       puts "[Discord] Webhook送信失敗: #{response.code} #{response.message}"
     end
   rescue StandardError => e
@@ -79,12 +79,12 @@ class LogWatcher
     @running = true
 
     loop do
-      break if !@running
+      break unless @running
 
       until File.exist?(@log_path)
         puts "[LogWatcher] ログファイル待機中: #{@log_path}"
         sleep 1
-        return if !@running
+        return unless @running
       end
 
       begin
@@ -279,7 +279,7 @@ class DiscordNotifier
 
   def shutdown
     return if @shutdown_sent
-    return if !@rcon
+    return unless @rcon
 
     @shutdown_sent = true
     @webhook.send({

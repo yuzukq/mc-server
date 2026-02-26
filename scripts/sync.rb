@@ -88,7 +88,7 @@ class R2Sync
   # 同期ヘッダファイルをR2にアップロード
   # アップロード完了後にホスト識別情報を記録する
   def upload_sync_header
-    if !@host_display_name
+    unless @host_display_name
       puts 'ℹ️  HOST_DISPLAY_NAMEが未設定のため、同期ヘッダのアップロードをスキップします'
       return
     end
@@ -268,20 +268,14 @@ class R2Sync
   # 同期ヘッダのhost_display_nameが現在のホストと一致し、ローカルデータが存在する場合にtrueを返す
   def should_skip_download?(sync_header)
     # HOST_DISPLAY_NAMEが未設定の場合はスキップしない
-    if !@host_display_name
-      return false
-    end
+    return false unless @host_display_name
 
     # 同期ヘッダが存在しない場合（初回起動・レガシー環境）はスキップしない
-    if !sync_header
-      return false
-    end
+    return false unless sync_header
 
     # ローカルデータディレクトリが存在しないか空の場合はスキップしない
     local_data_path = File.expand_path(LOCAL_DATA_DIR)
-    if !Dir.exist?(local_data_path) || Dir.empty?(local_data_path)
-      return false
-    end
+    return false if !Dir.exist?(local_data_path) || Dir.empty?(local_data_path)
 
     # ホスト識別子が一致する場合のみスキップ
     sync_header['host_display_name'] == @host_display_name
