@@ -21,6 +21,7 @@ LOCAL_DATA_DIR = ENV.fetch('LOCAL_DATA_DIR', './data')
 
 LOCK_FILE_KEY = 'server.lock'
 DATA_ARCHIVE_KEY = 'server-data.tar.gz'
+SYNC_HEADER_KEY = 'sync-header.json'
 
 # =============================================================================
 # R2同期クラス
@@ -37,6 +38,8 @@ class R2Sync
       force_path_style: true
     )
     @hostname = Socket.gethostname
+    @host_display_name = ENV.fetch('HOST_DISPLAY_NAME', nil)
+    @host_display_name = nil if @host_display_name&.empty?
   end
 
   # 必須環境変数のバリデーション
@@ -65,6 +68,45 @@ class R2Sync
     JSON.parse(response.body.read)
   rescue Aws::S3::Errors::NoSuchKey
     nil
+  end
+
+  # 同期ヘッダファイルの確認
+  # 最後にアップロードしたホストの情報を返す。存在しない場合はnilを返す
+  def check_sync_header
+    response = @s3_client.get_object(
+      bucket: R2_BUCKET_NAME,
+      key: SYNC_HEADER_KEY
+    )
+    JSON.parse(response.body.read)
+  rescue Aws::S3::Errors::NoSuchKey
+    nil
+  rescue Aws::S3::Errors::ServiceError => e
+    puts "⚠️  同期ヘッダの確認に失敗しました: #{e.message}"
+    nil
+  end
+
+  # 同期ヘッダファイルをR2にアップロード
+  # アップロード完了後にホスト識別情報を記録する
+  def upload_sync_header
+    unless @host_display_name
+      puts 'ℹ️  HOST_DISPLAY_NAMEが未設定のため、同期ヘッダのアップロードをスキップします'
+      return
+    end
+
+    header_data = {
+      'host_display_name' => @host_display_name,
+      'timestamp' => Time.now.utc.iso8601
+    }
+
+    @s3_client.put_object(
+      bucket: R2_BUCKET_NAME,
+      key: SYNC_HEADER_KEY,
+      body: JSON.pretty_generate(header_data),
+      content_type: 'application/json'
+    )
+    puts "✅ 同期ヘッダをアップロードしました (ホスト: #{@host_display_name})"
+  rescue Aws::S3::Errors::ServiceError => e
+    puts "⚠️  警告: 同期ヘッダのアップロードに失敗しました: #{e.message}"
   end
 
   # ロックファイルの作成
@@ -198,23 +240,46 @@ class R2Sync
     puts '✅ サーバーデータをR2にアップロードしました'
   end
 
-  # 初期化処理: ロック取得 → データダウンロード
+  # 初期化処理: ロック取得 → ヘッダ確認 → データダウンロード（必要な場合のみ）
   def sync_init
     puts '🚀 サーバー同期を初期化中...'
     create_lock
-    download_data
+    sync_header = check_sync_header
+    if should_skip_download?(sync_header)
+      puts "⏭️  前回の起動者と同一ホストのため、ダウンロードをスキップします (ホスト: #{@host_display_name})"
+    else
+      download_data
+    end
     puts '✅ 同期の初期化が完了しました'
   end
 
-  # シャットダウン処理: データアップロード → ロック解放
+  # シャットダウン処理: データアップロード → ヘッダアップロード → ロック解放
   def sync_shutdown
     puts '🔄 サーバー同期をシャットダウン中...'
     upload_data
+    upload_sync_header
     release_lock
     puts '✅ 同期のシャットダウンが完了しました'
   end
 
   private
+
+  # ダウンロードをスキップできるかどうかを判定する
+  # 同期ヘッダのhost_display_nameが現在のホストと一致し、ローカルデータが存在する場合にtrueを返す
+  def should_skip_download?(sync_header)
+    # HOST_DISPLAY_NAMEが未設定の場合はスキップしない
+    return false unless @host_display_name
+
+    # 同期ヘッダが存在しない場合（初回起動・レガシー環境）はスキップしない
+    return false unless sync_header
+
+    # ローカルデータディレクトリが存在しないか空の場合はスキップしない
+    local_data_path = File.expand_path(LOCAL_DATA_DIR)
+    return false if !Dir.exist?(local_data_path) || Dir.empty?(local_data_path)
+
+    # ホスト識別子が一致する場合のみスキップ
+    sync_header['host_display_name'] == @host_display_name
+  end
 
   # tar.gzアーカイブを作成
   def create_tar_gz(source_dir, archive_path)
@@ -254,6 +319,7 @@ def print_usage
   puts '  lock         - サーバーロックの取得のみ'
   puts '  unlock       - サーバーロックの解放のみ'
   puts '  check-lock   - 現在のロック状態を確認'
+  puts '  check-header - 同期ヘッダの確認'
   exit 1
 end
 
@@ -284,6 +350,15 @@ def main
       puts "   開始時刻: #{lock['timestamp'] || 'unknown'}"
     else
       puts '🔓 サーバーはロックされていません'
+    end
+  when 'check-header'
+    header = sync.check_sync_header
+    if header
+      puts '📋 同期ヘッダ情報:'
+      puts "   最終アップロードホスト: #{header['host_display_name'] || 'unknown'}"
+      puts "   アップロード時刻: #{header['timestamp'] || 'unknown'}"
+    else
+      puts 'ℹ️  同期ヘッダが存在しません'
     end
   else
     puts "❌ 不明なコマンド: #{command}"

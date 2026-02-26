@@ -16,6 +16,7 @@ services:
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
       R2_ENDPOINT: ${R2_ENDPOINT}
       LOCAL_DATA_DIR: ${LOCAL_DATA_DIR:-./data}
+      HOST_DISPLAY_NAME: ${HOST_DISPLAY_NAME:-}
     command: ruby sync.rb init
     restart: "no"
 
@@ -100,6 +101,7 @@ services:
       R2_BUCKET_NAME: ${R2_BUCKET_NAME}
       R2_ENDPOINT: ${R2_ENDPOINT}
       LOCAL_DATA_DIR: ${LOCAL_DATA_DIR:-./data}
+      HOST_DISPLAY_NAME: ${HOST_DISPLAY_NAME:-}
     command: ruby sync.rb shutdown
     restart: "no"
     profiles:
