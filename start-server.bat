@@ -31,6 +31,25 @@ if not exist !ENV_FILE! (
     exit /b 1
 )
 
+REM 本番環境ガード: 引数なし(本番)の場合に明示的な確認を要求
+if "%~1"=="" (
+    echo ========================================
+    echo [警告] 本番環境で操作します
+    echo 本番R2バケットにアクセスします。
+    echo ========================================
+    echo.
+    set "CONFIRM="
+    set /p CONFIRM="続行するには yes と入力してください (それ以外でキャンセル): "
+    if /i not "!CONFIRM!"=="yes" (
+        echo.
+        echo キャンセルしました。開発環境を使用する場合: start-server.bat dev
+        echo.
+        pause
+        exit /b 1
+    )
+    echo.
+)
+
 REM カスタムRubyイメージのビルドが必要か確認
 docker compose --env-file !ENV_FILE! images sync-init -q >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
