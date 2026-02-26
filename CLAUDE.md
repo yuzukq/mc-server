@@ -1,25 +1,24 @@
-# CLAUDE.md — AI Assistant Guide for mc-server
+# CLAUDE.md — AIアシスタント向けガイド (mc-server)
 
-## Project Overview
+## プロジェクト概要
 
-This repository is a **Dockerized Minecraft server management system** that enables
-multiple hosts to share a single Minecraft world stored on Cloudflare R2 object storage.
-Key features include: distributed hosting with a pessimistic locking mechanism to prevent
-concurrent launches, automatic world data sync on startup/shutdown, Discord event
-notifications, and in-game host display via a Minecraft bossbar.
+このリポジトリは、**DockerベースのMinecraftサーバー管理システム**です。
+複数のホストが Cloudflare R2 オブジェクトストレージ上の単一ワールドデータを共有できます。
+主な機能: 悲観的ロック機構による同時起動防止、起動・停止時のワールドデータ自動同期、
+Discord イベント通知、Minecraft ボスバーによるホスト表示。
 
-**Language stack:** Ruby 3.2 (primary), Bash/Batch (orchestration), MCFunction (datapack)
+**言語スタック:** Ruby 3.2 (主要)、Bash/Batch (オーケストレーション)、MCFunction (データパック)
 
 ---
 
-## Repository Structure
+## リポジトリ構成
 
 ```
 mc-server/
 ├── .github/
-│   └── pull_request_template.md   # PR template (Japanese, review prefixes defined here)
+│   └── pull_request_template.md   # PRテンプレート (日本語、レビュー接頭辞定義)
 ├── datapack/
-│   └── host_bossbar/              # Minecraft datapack for bossbar support
+│   └── host_bossbar/              # ボスバー表示用 Minecraft データパック
 │       ├── pack.mcmeta
 │       └── data/
 │           ├── minecraft/tags/functions/load.json
@@ -28,75 +27,73 @@ mc-server/
 │               └── tick.mcfunction
 ├── docker/
 │   └── ruby/
-│       └── Dockerfile             # Custom Ruby image with aws-sdk-s3 gem
+│       └── Dockerfile             # aws-sdk-s3 gem 入りカスタム Ruby イメージ
 ├── scripts/
 │   ├── lib/
-│   │   └── rcon_client.rb         # Shared RCON protocol implementation
-│   ├── bossbar.rb                 # Displays host name in-game via bossbar
-│   ├── discord_notify.rb          # Sends server/player events to Discord
-│   ├── measure-performance.sh     # TPS/MSPT/CPU/memory metrics via RCON
-│   └── sync.rb                    # World data sync with Cloudflare R2
+│   │   └── rcon_client.rb         # 共有 RCON プロトコル実装
+│   ├── bossbar.rb                 # ボスバーでホスト名をゲーム内表示
+│   ├── discord_notify.rb          # サーバー・プレイヤーイベントを Discord に通知
+│   ├── measure-performance.sh     # RCON 経由で TPS/MSPT/CPU/メモリを計測
+│   └── sync.rb                    # Cloudflare R2 とのワールドデータ同期
 ├── test/
-│   └── test_log_rotation.sh       # Log rotation detection test
-├── .env.example                   # Template for environment configuration
+│   └── test_log_rotation.sh       # ログローテーション検出テスト
+├── .env.example                   # 環境変数設定テンプレート
 ├── .gitignore
-├── README.md                      # Full Japanese documentation with diagrams
-├── compose.yml                    # Docker Compose service definitions
-├── start-server.sh / start-server.bat   # Cross-platform server start scripts
-└── stop-server.sh  / stop-server.bat    # Cross-platform server stop scripts
+├── README.md                      # 日本語ドキュメント (アーキテクチャ図含む)
+├── compose.yml                    # Docker Compose サービス定義
+├── start-server.sh / start-server.bat   # クロスプラットフォーム起動スクリプト
+└── stop-server.sh  / stop-server.bat    # クロスプラットフォーム停止スクリプト
 ```
 
 ---
 
-## Docker Services
+## Docker サービス
 
-Defined in `compose.yml`. Services run in dependency order:
+`compose.yml` で定義。依存関係の順に起動されます。
 
-| Service | Container | Purpose | Lifecycle |
+| サービス | コンテナ名 | 目的 | ライフサイクル |
 |---|---|---|---|
-| `sync-init` | `mc_sync_init` | Acquires R2 lock, downloads world data | Runs once before `server` starts |
-| `server` | `mc_server` | Minecraft server (Forge 1.20.1, 4 GB RAM) | `restart: unless-stopped` |
-| `sync-shutdown` | `mc_sync_shutdown` | Uploads world data, releases R2 lock | Runs once on shutdown (profile: `shutdown`) |
-| `bossbar-manager` | `mc_bossbar` | Displays host name in-game via RCON | Runs once after server starts |
-| `discord-notify` | `mc_discord_notify` | Tails server logs, notifies Discord | Runs alongside server |
+| `sync-init` | `mc_sync_init` | R2 ロック取得・ワールドデータダウンロード | `server` 起動前に一度だけ実行 |
+| `server` | `mc_server` | Minecraft サーバー (Forge 1.20.1、4GB RAM) | `restart: unless-stopped` |
+| `sync-shutdown` | `mc_sync_shutdown` | ワールドデータアップロード・ロック解放 | 停止時に一度だけ実行 (`shutdown` プロファイル) |
+| `bossbar-manager` | `mc_bossbar` | RCON 経由でホスト名をゲーム内表示 | サーバー起動後に一度だけ実行 |
+| `discord-notify` | `mc_discord_notify` | サーバーログ監視・Discord 通知 | サーバーと並行して実行 |
 
-`sync-shutdown` is gated behind the `shutdown` profile and is explicitly triggered by
-the stop scripts rather than running automatically.
+`sync-shutdown` は `shutdown` プロファイルで保護されており、停止スクリプトから明示的に起動されます。
 
 ---
 
-## Environment Configuration
+## 環境変数の設定
 
-Copy `.env.example` to `.env` and fill in all values before starting.
+`.env.example` を `.env` にコピーし、すべての値を入力してから起動してください。
 
-| Variable | Description |
+| 変数名 | 説明 |
 |---|---|
-| `R2_ACCOUNT_ID` | Cloudflare account ID |
-| `R2_ACCESS_KEY_ID` | R2 API access key |
-| `R2_SECRET_ACCESS_KEY` | R2 API secret key |
-| `R2_BUCKET_NAME` | Bucket name for world data |
+| `R2_ACCOUNT_ID` | Cloudflare アカウント ID |
+| `R2_ACCESS_KEY_ID` | R2 API アクセスキー |
+| `R2_SECRET_ACCESS_KEY` | R2 API シークレットキー |
+| `R2_BUCKET_NAME` | ワールドデータ用バケット名 |
 | `R2_ENDPOINT` | `https://<account_id>.r2.cloudflarestorage.com` |
-| `LOCAL_DATA_DIR` | Local mount path for world data (default: `./data`) |
-| `HOST_DISPLAY_NAME` | Host name shown to players in-game (unique per host) |
-| `RCON_PASSWORD` | Minecraft RCON password (default: `minecraft`) |
-| `DISCORD_WEBHOOK_URL` | Discord webhook URL for event notifications |
+| `LOCAL_DATA_DIR` | ワールドデータのローカルマウントパス (デフォルト: `./data`) |
+| `HOST_DISPLAY_NAME` | ゲーム内に表示されるホスト名 (ホストごとに一意にすること) |
+| `RCON_PASSWORD` | Minecraft RCON パスワード (デフォルト: `minecraft`) |
+| `DISCORD_WEBHOOK_URL` | イベント通知用 Discord Webhook URL |
 
-For development/testing, create `.env.dev` (already gitignored) and run scripts with the
-`dev` argument to use it instead.
+開発・テスト時は `.env.dev` を作成し (`.gitignore` 済み)、スクリプトに `dev` 引数を渡すと使用されます。
 
-**Important:** Never commit `.env` or any file containing real credentials.
-The `.gitignore` excludes `.env` and `.env.*` (except `.env.example`).
+**重要:** `.env` や認証情報を含むファイルは絶対にコミットしないでください。
+`.gitignore` は `.env.example` 以外の `.env.*` を除外しています。
 
 ---
 
-## Development Workflow
+## 開発ワークフロー
 
-### Starting and Stopping the Server
+### サーバーの起動・停止
 
 **Linux/Mac:**
 ```bash
-./start-server.sh        # uses .env
-./start-server.sh dev    # uses .env.dev
+./start-server.sh        # .env を使用
+./start-server.sh dev    # .env.dev を使用
 ./stop-server.sh
 ./stop-server.sh dev
 ```
@@ -108,171 +105,159 @@ start-server.bat dev
 stop-server.bat
 ```
 
-The start script automatically builds the custom Ruby Docker image on first run.
+起動スクリプトは初回実行時にカスタム Ruby Docker イメージを自動ビルドします。
 
-### Useful Docker Commands
+### よく使う Docker コマンド
 
 ```bash
-# Follow server logs
+# サーバーログをリアルタイム確認
 docker logs -f mc_server
 
-# Manual start/stop (without sync)
+# 手動起動・停止 (同期なし)
 docker compose up -d
 docker compose down
 
-# Check/release the R2 lock (if server crashed without unlocking)
+# R2 ロックの確認・解放 (サーバーがクラッシュしてロックが残った場合)
 docker compose run --rm sync-init ruby /app/sync.rb check-lock
 docker compose run --rm sync-init ruby /app/sync.rb unlock
 
-# Force data download or upload
+# データの強制ダウンロード・アップロード
 docker compose run --rm sync-init ruby /app/sync.rb download
 docker compose run --rm sync-init ruby /app/sync.rb upload
 ```
 
-### sync.rb CLI Commands
+### sync.rb サブコマンド
 
-`scripts/sync.rb` accepts these subcommands:
+`scripts/sync.rb` は以下のサブコマンドを受け付けます。
 
-| Command | Description |
+| コマンド | 説明 |
 |---|---|
-| `init` | Acquire lock + download world data (run before server start) |
-| `shutdown` | Upload world data + release lock (run after server stop) |
-| `download` | Download only |
-| `upload` | Upload only |
-| `lock` | Acquire lock only |
-| `unlock` | Release lock only |
-| `check-lock` | Print current lock status |
+| `init` | ロック取得 + データダウンロード (サーバー起動前に実行) |
+| `shutdown` | データアップロード + ロック解放 (サーバー停止後に実行) |
+| `download` | ダウンロードのみ |
+| `upload` | アップロードのみ |
+| `lock` | ロック取得のみ |
+| `unlock` | ロック解放のみ |
+| `check-lock` | 現在のロック状態を表示 |
 
 ---
 
-## Key Scripts and Their Design
+## 主要スクリプトの設計
 
-### `scripts/sync.rb` — World Data Synchronization
+### `scripts/sync.rb` — ワールドデータ同期
 
-- Class: `R2Sync`
-- Uses `aws-sdk-s3` gem to interact with Cloudflare R2 (S3-compatible API)
-- **Lock mechanism:** Stores a `server.lock` JSON file in R2 containing hostname,
-  timestamp, and PID. Prevents two hosts from running the server simultaneously.
-- **Data format:** World data is compressed as `server-data.tar.gz` with
-  `--owner=1000 --group=1000` to ensure consistent file ownership inside Docker.
-- Validates all required env vars on startup; exits with code 1 if any are missing.
+- クラス: `R2Sync`
+- Cloudflare R2 (S3 互換 API) との通信に `aws-sdk-s3` gem を使用
+- **ロック機構:** ホスト名・タイムスタンプ・PID を含む `server.lock` JSON ファイルを R2 に保存。
+  複数ホストの同時起動を防ぎます。
+- **データ形式:** ワールドデータは `server-data.tar.gz` として圧縮。
+  Docker 内でのファイル所有権を統一するため `--owner=1000 --group=1000` を使用。
+- 起動時に必須環境変数を検証し、不足があればコード 1 で終了します。
 
-### `scripts/discord_notify.rb` — Discord Notifications
+### `scripts/discord_notify.rb` — Discord 通知
 
-- Classes: `DiscordWebhook`, `LogWatcher`, `DiscordNotifier`
-- Watches `./data/logs/latest.log` in real time using inode tracking to handle log
-  rotation (file is replaced rather than truncated).
-- Detects patterns: server start/stop, player join/leave.
-- Sends color-coded Discord embeds (blue=online, green=join, orange=leave, red=offline).
-- Registers SIGTERM/SIGINT handlers for graceful shutdown.
+- クラス: `DiscordWebhook`、`LogWatcher`、`DiscordNotifier`
+- inode 追跡によるリアルタイムのログファイル監視 (ログローテーション対応)
+- 検出パターン: サーバー起動・停止、プレイヤー参加・退出
+- 色分けされた Discord Embed を送信 (青=オンライン、緑=参加、橙=退出、赤=オフライン)
+- グレースフルシャットダウンのための SIGTERM/SIGINT ハンドラーを登録
 
-### `scripts/bossbar.rb` — In-Game Host Display
+### `scripts/bossbar.rb` — ゲーム内ホスト表示
 
-- Class: `BossbarManager`
-- Connects to the Minecraft server via RCON after it finishes loading.
-- Retries connection (configurable via `MAX_RETRIES` and `RETRY_INTERVAL` env vars).
-- Runs Minecraft commands to create and display a bossbar showing `HOST_DISPLAY_NAME`.
+- クラス: `BossbarManager`
+- サーバーロード完了後に RCON で接続
+- 接続リトライ (`MAX_RETRIES`・`RETRY_INTERVAL` 環境変数で設定可能)
+- `HOST_DISPLAY_NAME` を表示するボスバーを作成・表示するコマンドを実行
 
-### `scripts/lib/rcon_client.rb` — Shared RCON Library
+### `scripts/lib/rcon_client.rb` — 共有 RCON ライブラリ
 
-- Class: `RconClient`
-- Custom implementation of the RCON protocol over TCP.
-- Custom exceptions: `AuthenticationError`, `ConnectionError`.
-- Handles binary packet framing and UTF-8 encoding.
-- Shared by both `bossbar.rb` and `discord_notify.rb`.
-
----
-
-## Code Conventions
-
-- **Frozen string literals:** Every Ruby file begins with `# frozen_string_literal: true`.
-- **Class-based architecture:** Each script exposes one or more focused classes.
-- **Comments are in Japanese** — this is intentional and should be preserved.
-- **Emoji in console output** — used throughout for visual status clarity; preserve this style.
-- **Error handling:** Use custom exception classes for domain errors; rescue
-  `Aws::S3::Errors::ServiceError` for R2 operations.
-- **No test framework:** The single test (`test/test_log_rotation.sh`) is a bash script
-  that exercises the Docker environment directly.
-- **Do not use `unless` for negated boolean conditions** — the codebase uses `if !bool`
-  style (see commit `b324b63`).
-- **Ownership:** All world data files must be owned by UID/GID 1000 inside Docker.
+- クラス: `RconClient`
+- TCP 上の RCON プロトコルをカスタム実装
+- カスタム例外: `AuthenticationError`、`ConnectionError`
+- バイナリパケットフレーミングと UTF-8 エンコーディングを処理
+- `bossbar.rb` と `discord_notify.rb` の両方で共有
 
 ---
 
-## Pull Request Conventions
+## コーディング規約
 
-PRs follow the template in `.github/pull_request_template.md`.
-
-- Written in **Japanese**
-- Sections: 概要 (Overview), 背景・動機 (Background), 新規追加ファイル (New Files),
-  変更内容 (Changes), 技術的な判断 (Technical Decisions), スクリーンショット (Screenshots),
-  レビューに関して (Review Notes)
-- **Review comment prefixes:**
-  - `[must]` — required change
-  - `[imo]` — opinion, not mandatory
-  - `[nits]` — nitpick
-  - `[ask]` — question
-  - `[fyi]` — informational
-
-**Review focus areas:** naming consistency, security concerns, performance impact,
-proper method responsibility separation, typos in variable names and comments.
+- **frozen string literal:** すべての Ruby ファイルは `# frozen_string_literal: true` で始める。
+- **クラスベースのアーキテクチャ:** 各スクリプトは役割が明確なクラスを 1 つ以上公開する。
+- **コメントは日本語** — 意図的なものであり、維持すること。
+- **コンソール出力に絵文字を使用** — 視覚的な状態把握のために使用しているため、このスタイルを維持すること。
+- **エラーハンドリング:** ドメインエラーにはカスタム例外クラスを使用。R2 操作では `Aws::S3::Errors::ServiceError` を rescue する。
+- **テストフレームワークなし:** テストは Docker 環境を直接操作する bash スクリプト (`test/test_log_rotation.sh`) 1 つのみ。
+- **否定条件に `unless` を使用しない** — `unless bool` ではなく `if !bool` スタイルを使用すること (コミット `b324b63` 参照)。
+- **所有権:** Docker ボリューム内のワールドデータファイルは必ず UID/GID 1000 で所有すること。
 
 ---
 
-## Security Notes
+## プルリクエストの規約
 
-- **Never commit credentials.** The `.gitignore` excludes all `.env.*` files except
-  `.env.example`.
-- RCON is only exposed within the Docker internal network (not published externally).
-- The Minecraft server port `25565` is published; access control is via `ONLINE_MODE=true`
-  and Tailscale for private network setups.
-- The R2 lock mechanism is not atomic (no compare-and-swap); it relies on the convention
-  that only one host runs the server at a time. Manual lock release is documented in
-  the README.
+PR は `.github/pull_request_template.md` のテンプレートに従います。
+
+- **日本語**で記述
+- セクション: 概要、背景・動機、新規追加ファイル、変更内容、技術的な判断、スクリーンショット、レビューに関して
+- **レビューコメントの接頭辞:**
+  - `[must]` — 必須の変更
+  - `[imo]` — 意見 (修正必須ではない)
+  - `[nits]` — 些細な指摘
+  - `[ask]` — 質問
+  - `[fyi]` — 参考情報
+
+**レビュー重点項目:** 命名の一貫性、セキュリティ上の懸念、パフォーマンスへの影響、
+メソッドの責務分離、変数名・コメントの誤字脱字。
 
 ---
 
-## Testing
+## セキュリティに関する注意
+
+- **認証情報は絶対にコミットしないこと。** `.gitignore` は `.env.example` 以外の `.env.*` をすべて除外しています。
+- RCON は Docker 内部ネットワーク内にのみ公開されており、外部には公開されていません。
+- Minecraft サーバーポート `25565` は公開されています。アクセス制御は `ONLINE_MODE=true` と Tailscale によるプライベートネットワーク設定で行います。
+- R2 ロック機構はアトミックではありません (compare-and-swap なし)。1 つのホストのみがサーバーを実行するという運用規則に依存しています。手動ロック解放の手順は README に記載されています。
+
+---
+
+## テスト
 
 ```bash
-# Run the log rotation test (requires a running server container)
+# ログローテーションテストを実行 (サーバーコンテナが起動している必要があります)
 bash test/test_log_rotation.sh
 ```
 
-There is no unit test suite. Integration testing is manual by running the full Docker
-Compose stack.
+ユニットテストスイートはありません。インテグレーションテストは Docker Compose スタック全体を起動して手動で行います。
 
 ---
 
-## Minecraft Server Configuration
+## Minecraft サーバー設定
 
-- **Version:** 1.20.1 (Forge)
-- **Memory:** 4 GB
-- **Max players:** 8
-- **Game mode:** Survival, PVP enabled, flight allowed
-- **RCON:** Enabled on port 25575 (internal Docker network only)
-- **Whitelist:** Disabled
-- **Timezone:** Asia/Tokyo
-- **Command blocks:** Disabled
-- **Online mode:** Enabled (requires valid Minecraft account)
+- **バージョン:** 1.20.1 (Forge)
+- **メモリ:** 4 GB
+- **最大プレイヤー数:** 8
+- **ゲームモード:** サバイバル、PVP 有効、飛行許可
+- **RCON:** ポート 25575 で有効 (Docker 内部ネットワークのみ)
+- **ホワイトリスト:** 無効
+- **タイムゾーン:** Asia/Tokyo
+- **コマンドブロック:** 無効
+- **オンラインモード:** 有効 (正規の Minecraft アカウントが必要)
 
 ---
 
-## Common Pitfalls
+## よくある落とし穴
 
-1. **Stale lock:** If the server crashes without running `sync-shutdown`, the R2 lock
-   file remains. Run `ruby sync.rb unlock` via Docker to clear it before the next start.
+1. **ロックが残存する:** `sync-shutdown` を実行せずにサーバーがクラッシュした場合、R2 にロックファイルが残ります。
+   次回起動前に Docker 経由で `ruby sync.rb unlock` を実行してクリアしてください。
 
-2. **First run:** On first start with no data in R2, the server boots fresh. The sync
-   script logs an info message and continues normally.
+2. **初回起動:** R2 にデータがない状態での初回起動時、サーバーは新規として起動します。
+   sync スクリプトは情報メッセージをログ出力し、正常に処理を続行します。
 
-3. **File ownership errors:** World data inside the Docker volume must be owned by
-   UID/GID 1000. The `fix_ownership` method in `sync.rb` handles this after extraction.
+3. **ファイル所有権エラー:** Docker ボリューム内のワールドデータは UID/GID 1000 で所有されている必要があります。
+   `sync.rb` の `fix_ownership` メソッドが展開後にこれを処理します。
 
-4. **Log rotation:** `discord_notify.rb` uses inode tracking (not file name) to survive
-   Minecraft's log rotation. Do not change the log watching logic to use file position
-   only.
+4. **ログローテーション:** `discord_notify.rb` は inode 追跡を使用してログローテーションを乗り越えます。
+   ファイルの位置のみを使用するようにログ監視ロジックを変更しないでください。
 
-5. **Environment file naming:** The start/stop scripts accept an optional argument
-   (e.g., `dev`) that selects `.env.dev`. Do not pass the `.env.` prefix — just the
-   suffix (e.g., `./start-server.sh dev`, not `./start-server.sh .env.dev`).
+5. **環境ファイルの命名:** 起動・停止スクリプトはオプション引数 (例: `dev`) を受け取り、
+   `.env.dev` を選択します。`.env.` プレフィックスは不要です。
+   例: `./start-server.sh dev` (× `./start-server.sh .env.dev`)
